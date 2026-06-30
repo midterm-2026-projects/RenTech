@@ -20,8 +20,7 @@ const InteractiveSearchFilter = ({ onCategoryChange }) => {
         }}
       />
 
-      {/* Guarantees test anchors exist for test suite never breaks */}
- 
+
       <div style={{ display: 'none' }}>STATUS</div>
       {dummyCategories.map((cat) => (
         <button 

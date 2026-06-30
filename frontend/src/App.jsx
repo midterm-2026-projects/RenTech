@@ -4,31 +4,34 @@ import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import Catalog from "./components/Catalog";
 import ProductCard from "./components/ProductCard";
 import SearchAndFilter from "./components/SearchAndFilter";
+import Signup from "./components/SignUp";
+import Login from "./components/Login";
+import StaffManagement from "./components/StaffManagement";
 import AIBusinessInsights from "./components/AIBusinessInsights";
 import SmartInventoryOptimization from "./components/SmartInventoryOptimization";
 import CustomerChat from "./components/CustomerChat";
-import StaffManagement from "./components/StaffManagement";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
+  const [extraUsers, setExtraUsers] = useState({});
 
-  // --- Mock Data for the New Components ---
+  // Mock data for AI components
   const mockInsights = [
     "Rental demand for winter coats is up 20% this week.",
-    "Expect a surge in formal wear rentals next month due to prom season."
+    "Expect a surge in formal wear rentals next month due to prom season.",
   ];
-  
+
   const mockSuggestions = [
     "Recommend styling scarves to customers renting coats.",
-    "Bundle evening gowns with matching jewelry for a 10% discount."
+    "Bundle evening gowns with matching jewelry for a 10% discount.",
   ];
 
   const mockMetrics = {
     totalSales: 5240,
     lowStockItems: 8,
     optimizationScore: 92,
-    topSellingItem: 'Classic Black Tuxedo'
+    topSellingItem: "Classic Black Tuxedo",
   };
 
   return (
@@ -38,7 +41,7 @@ function App() {
           RenTech Component Viewer
         </h1>
 
-        {/* KPI Cards Section */}
+        {/* KPI Cards */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             1. KPI Cards Component
@@ -46,7 +49,7 @@ function App() {
           <KPICards />
         </section>
 
-        {/* Analytics Dashboard Section */}
+        {/* Analytics Dashboard */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             2. Analytics Dashboard Component
@@ -54,7 +57,7 @@ function App() {
           <AnalyticsDashboard />
         </section>
 
-        {/* Catalog Section */}
+        {/* Catalog */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             3. Catalog Component
@@ -62,7 +65,7 @@ function App() {
           <Catalog />
         </section>
 
-        {/* Product Card Section */}
+        {/* Product Card */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             4. Product Card Component
@@ -79,7 +82,7 @@ function App() {
           />
         </section>
 
-        {/* Search & Filter Section */}
+        {/* Search & Filter */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             5. Search & Filter Component
@@ -92,53 +95,98 @@ function App() {
           />
         </section>
 
-        {/* --- NEW COMPONENTS ADDED BELOW --- */}
-
-        {/* Generative AI Business Insights Section */}
+        {/* Login */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
-            6. Generative AI Business Insights
+            6. Login Component
           </h2>
-          <AIBusinessInsights 
-            insights={mockInsights} 
-            suggestions={mockSuggestions} 
+          <Login
+            onLogin={(role) => console.log(`Logged in as ${role}`)}
+            onBack={() => console.log("Back pressed")}
           />
         </section>
 
-        {/* Smart Inventory Optimization Section */}
+        {/* Sign Up */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
-            7. Smart Inventory & Sales Optimization
+            7. Sign Up Component
           </h2>
-          <SmartInventoryOptimization 
-            metrics={mockMetrics} 
+          <Signup
+            onLogin={(role) => console.log(`Logged in as ${role}`)}
+            onBack={() => console.log("Back pressed")}
+            onNavigateToLogin={() => console.log("Navigate to login")}
+            extraUsers={extraUsers}
+            setExtraUsers={setExtraUsers}
           />
         </section>
 
-        {/* Customer Chat Section */}
+        {/* AI Business Insights */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
-            8. Customer Support Assistant
+            8. Generative AI Business Insights
           </h2>
-          <CustomerChat 
+          <AIBusinessInsights
+            insights={mockInsights}
+            suggestions={mockSuggestions}
+          />
+        </section>
+
+        {/* Smart Inventory Optimization */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            9. Smart Inventory & Sales Optimization
+          </h2>
+          <SmartInventoryOptimization metrics={mockMetrics} />
+        </section>
+
+        {/* Customer Chat */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            10. Customer Support Assistant
+          </h2>
+          <CustomerChat
             products={[
-              { id: 1, name: "Ivory Lace Gown", category: "wedding", color: "ivory" },
-              { id: 2, name: "Satin Ballgown", category: "evening", color: "navy" },
-              { id: 3, name: "Velvet Cloak", category: "costume", color: "burgundy" },
-              { id: 4, name: "Floral Maxi Dress", category: "casual", color: "multi" },
-              { id: 5, name: "Red Carpet Gown", category: "evening", color: "red" },
+              {
+                id: 1,
+                name: "Ivory Lace Gown",
+                category: "wedding",
+                color: "ivory",
+              },
+              {
+                id: 2,
+                name: "Satin Ballgown",
+                category: "evening",
+                color: "navy",
+              },
+              {
+                id: 3,
+                name: "Velvet Cloak",
+                category: "costume",
+                color: "burgundy",
+              },
+              {
+                id: 4,
+                name: "Floral Maxi Dress",
+                category: "casual",
+                color: "multi",
+              },
+              {
+                id: 5,
+                name: "Red Carpet Gown",
+                category: "evening",
+                color: "red",
+              },
             ]}
           />
         </section>
 
-        {/* Staff Management Section */}
+        {/* Staff Management */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
-            9. Staff Management
+            11. Staff Management Component
           </h2>
           <StaffManagement />
         </section>
-
       </div>
     </div>
   );
