@@ -10,7 +10,7 @@ const CustomerChat = ({ products = [] }) => {
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const userMessage = { role: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
@@ -21,7 +21,7 @@ const CustomerChat = ({ products = [] }) => {
     setTimeout(() => {
       const botReply = {
         role: 'assistant',
-        text: generateCustomerResponse(input, [], products) // pass products if provided
+        text: generateCustomerResponse(input, [], products) ?? "I'm not sure how to respond to that."
       };
       setMessages(prev => [...prev, botReply]);
       setLoading(false);

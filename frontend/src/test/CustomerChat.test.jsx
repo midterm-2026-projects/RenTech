@@ -5,7 +5,6 @@ import CustomerChat from "../components/CustomerChat";
 import * as customerService from "../services/customerAssistantService";
 
 describe("CustomerChat Component", () => {
-  // Mock the service before each test
   beforeEach(() => {
     vi.spyOn(customerService, "generateCustomerResponse").mockImplementation(
       (input) => `Mock reply for: "${input}"`
@@ -16,60 +15,26 @@ describe("CustomerChat Component", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders initial assistant message", () => {
+  it("renders the full initial chat UI on load", () => {
     render(<CustomerChat />);
-    expect(
-      screen.getByText(/your customer assistant/i)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("Ask your AI assistant...")
-    ).toBeInTheDocument();
+
+    expect(screen.getByText(/your customer assistant/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ask your AI assistant...")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /send/i })).toHaveTextContent("Send");
+    expect(screen.getByTestId("chat-messages")).toBeInTheDocument();
+    expect(screen.queryByText("AI is typing...")).not.toBeInTheDocument();
   });
 
-  it("renders the send button and input field", () => {
-    render(<CustomerChat />);
-    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("Ask your AI assistant...")
-    ).toBeInTheDocument();
-  });
-
-  it("allows user to type a message and sends it", async () => {
+  it("sends a message, shows loading, then renders the reply via button or Enter", async () => {
     const user = userEvent.setup();
     render(<CustomerChat />);
 
     const input = screen.getByPlaceholderText("Ask your AI assistant...");
-    const sendButton = screen.getByRole("button", { name: /send/i });
 
-    await user.type(input, "Hello assistant");
-    await user.click(sendButton);
-
-    // User message appears
-    expect(screen.getByText("Hello assistant")).toBeInTheDocument();
-
-    // Service was called with the input (waits for 800ms setTimeout)
-    await waitFor(() => {
-      expect(customerService.generateCustomerResponse).toHaveBeenCalledWith(
-        "Hello assistant",
-        [],
-        expect.any(Array)
-      );
-    });
-
-    // Assistant reply appears
-    await waitFor(() => {
-      expect(screen.getByText(/Mock reply for: "Hello assistant"/i)).toBeInTheDocument();
-    });
-  });
-
-  it("sends message when Enter key is pressed", async () => {
-    const user = userEvent.setup();
-    render(<CustomerChat />);
-
-    const input = screen.getByPlaceholderText("Ask your AI assistant...");
     await user.type(input, "Help me{enter}");
 
     expect(screen.getByText("Help me")).toBeInTheDocument();
+    expect(screen.getByText("AI is typing...")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(customerService.generateCustomerResponse).toHaveBeenCalledWith(
@@ -78,43 +43,114 @@ describe("CustomerChat Component", () => {
         expect.any(Array)
       );
     });
+
+    await waitFor(() => {
+      expect(screen.queryByText("AI is typing...")).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/Mock reply for: "Help me"/i)).toBeInTheDocument();
+
+    const sendButton = screen.getByRole("button", { name: /send/i });
+
+    await user.type(input, "Show me gowns");
+    await user.click(sendButton);
+
+    expect(screen.getByText("Show me gowns")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(customerService.generateCustomerResponse).toHaveBeenCalledWith(
+        "Show me gowns",
+        [],
+        expect.any(Array)
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Mock reply for: "Show me gowns"/i)).toBeInTheDocument();
+    });
   });
 
-  it("does not send empty messages", async () => {
+  it("does nothing when user clicks Send with empty or whitespace-only input", async () => {
     const user = userEvent.setup();
     render(<CustomerChat />);
 
     const sendButton = screen.getByRole("button", { name: /send/i });
     await user.click(sendButton);
 
-    // No new message added
     const messages = screen.getAllByRole("generic").filter(el =>
       el.className.includes("p-2 rounded-md")
     );
-    expect(messages).toHaveLength(1); // only initial assistant message
+    expect(messages).toHaveLength(1);
+    expect(customerService.generateCustomerResponse).not.toHaveBeenCalled();
+
+    const input = screen.getByPlaceholderText("Ask your AI assistant...");
+    await user.type(input, "   ");
+    await user.click(sendButton);
+
+    expect(screen.getAllByRole("generic").filter(el =>
+      el.className.includes("p-2 rounded-md")
+    )).toHaveLength(1);
     expect(customerService.generateCustomerResponse).not.toHaveBeenCalled();
   });
 
-  it("shows loading indicator while waiting for reply", async () => {
+  it("rejects sending while a reply is loading", async () => {
     const user = userEvent.setup();
     render(<CustomerChat />);
 
     const input = screen.getByPlaceholderText("Ask your AI assistant...");
     const sendButton = screen.getByRole("button", { name: /send/i });
 
-    await user.type(input, "Test");
+    await user.type(input, "First message");
     await user.click(sendButton);
 
-    // Immediately after click, loading should be true
     expect(screen.getByText("AI is typing...")).toBeInTheDocument();
 
-    // Wait for reply (after the 800ms setTimeout fires)
+    await user.type(input, "Second message");
+    await user.click(sendButton);
+
     await waitFor(() => {
-      expect(screen.queryByText("AI is typing...")).not.toBeInTheDocument();
-    }, { timeout: 2000 });
+      expect(customerService.generateCustomerResponse).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("calls service with custom products when provided as prop", async () => {
+  it("shows a fallback message when the service returns null", async () => {
+    customerService.generateCustomerResponse.mockReturnValue(null);
+
+    const user = userEvent.setup();
+    render(<CustomerChat />);
+
+    const input = screen.getByPlaceholderText("Ask your AI assistant...");
+    const sendButton = screen.getByRole("button", { name: /send/i });
+
+    await user.type(input, "Hello");
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("I'm not sure how to respond to that.")
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("sends with the default sample products when products prop is empty", async () => {
+    const user = userEvent.setup();
+    render(<CustomerChat products={[]} />);
+
+    const input = screen.getByPlaceholderText("Ask your AI assistant...");
+    const sendButton = screen.getByRole("button", { name: /send/i });
+
+    await user.type(input, "Recommend a gown");
+    await user.click(sendButton);
+
+    await waitFor(() => {
+      expect(customerService.generateCustomerResponse).toHaveBeenCalledWith(
+        "Recommend a gown",
+        [],
+        []
+      );
+    });
+  });
+
+  it("completes a full send flow with custom products prop", async () => {
     const customProducts = [{ id: 99, name: "Custom Gown" }];
     const user = userEvent.setup();
     render(<CustomerChat products={customProducts} />);
@@ -122,12 +158,14 @@ describe("CustomerChat Component", () => {
     const input = screen.getByPlaceholderText("Ask your AI assistant...");
     const sendButton = screen.getByRole("button", { name: /send/i });
 
-    await user.type(input, "Recommend something");
+    await user.type(input, "Find something");
     await user.click(sendButton);
+
+    expect(screen.getByText("Find something")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(customerService.generateCustomerResponse).toHaveBeenCalledWith(
-        "Recommend something",
+        "Find something",
         [],
         customProducts
       );
