@@ -4,10 +4,10 @@ import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import Catalog from "./components/Catalog";
 import ProductCard from "./components/ProductCard";
 import SearchAndFilter from "./components/SearchAndFilter";
-
-// Import the new AI and Inventory Components
 import AIBusinessInsights from "./components/AIBusinessInsights";
 import SmartInventoryOptimization from "./components/SmartInventoryOptimization";
+import CustomerChat from "./components/CustomerChat";
+import StaffManagement from "./components/StaffManagement";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,6 +113,30 @@ function App() {
           <SmartInventoryOptimization 
             metrics={mockMetrics} 
           />
+        </section>
+
+        {/* Customer Chat Section */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            8. Customer Support Assistant
+          </h2>
+          <CustomerChat 
+            products={[
+              { id: 1, name: "Ivory Lace Gown", category: "wedding", color: "ivory" },
+              { id: 2, name: "Satin Ballgown", category: "evening", color: "navy" },
+              { id: 3, name: "Velvet Cloak", category: "costume", color: "burgundy" },
+              { id: 4, name: "Floral Maxi Dress", category: "casual", color: "multi" },
+              { id: 5, name: "Red Carpet Gown", category: "evening", color: "red" },
+            ]}
+          />
+        </section>
+
+        {/* Staff Management Section */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            9. Staff Management
+          </h2>
+          <StaffManagement />
         </section>
 
       </div>

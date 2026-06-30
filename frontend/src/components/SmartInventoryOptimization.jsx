@@ -1,7 +1,7 @@
 import {
   calculateOptimizationScore,
   generatePromotionRecommendations,
-} from "../services/inventoryOptimization";
+} from "../services/inventoryOptimizationService";
 
 const SmartInventoryOptimization = ({ metrics }) => {
   if (!metrics) {
