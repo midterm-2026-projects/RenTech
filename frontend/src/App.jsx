@@ -5,9 +5,31 @@ import Catalog from "./components/Catalog";
 import ProductCard from "./components/ProductCard";
 import SearchAndFilter from "./components/SearchAndFilter";
 
+// Import the new AI and Inventory Components
+import AIBusinessInsights from "./components/AIBusinessInsights";
+import SmartInventoryOptimization from "./components/SmartInventoryOptimization";
+
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [category, setCategory] = useState("All");
+
+  // --- Mock Data for the New Components ---
+  const mockInsights = [
+    "Rental demand for winter coats is up 20% this week.",
+    "Expect a surge in formal wear rentals next month due to prom season."
+  ];
+  
+  const mockSuggestions = [
+    "Recommend styling scarves to customers renting coats.",
+    "Bundle evening gowns with matching jewelry for a 10% discount."
+  ];
+
+  const mockMetrics = {
+    totalSales: 5240,
+    lowStockItems: 8,
+    optimizationScore: 92,
+    topSellingItem: 'Classic Black Tuxedo'
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -69,6 +91,30 @@ function App() {
             onCategoryChange={setCategory}
           />
         </section>
+
+        {/* --- NEW COMPONENTS ADDED BELOW --- */}
+
+        {/* Generative AI Business Insights Section */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            6. Generative AI Business Insights
+          </h2>
+          <AIBusinessInsights 
+            insights={mockInsights} 
+            suggestions={mockSuggestions} 
+          />
+        </section>
+
+        {/* Smart Inventory Optimization Section */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            7. Smart Inventory & Sales Optimization
+          </h2>
+          <SmartInventoryOptimization 
+            metrics={mockMetrics} 
+          />
+        </section>
+
       </div>
     </div>
   );
