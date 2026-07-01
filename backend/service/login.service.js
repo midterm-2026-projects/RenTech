@@ -1,4 +1,4 @@
-import { UserModel } from '../model/login.model.js';
+import { UserModel, RentalRecordModel } from '../model/login.model.js'; 
 
 const mockUsersDb = [
   new UserModel({ username: 'admin', password: 'admin', role: 'Admin' }),
@@ -30,3 +30,27 @@ export const registerNewCustomer = async (username, password) => {
 export const verifyRolePermission = (userRole, allowedRoles) => {
   return allowedRoles.includes(userRole);
 };
+
+
+// WEEK2 DAY2
+export const assignUserRole = async (targetUsername, newRole, updaterRole) => {
+  if (updaterRole !== 'Admin') {
+    throw new Error('Unauthorized: Only Admins can assign roles');
+  }
+
+  const validRoles = ['Admin', 'Staff', 'Customer'];
+  if (!validRoles.includes(newRole)) {
+    throw new Error('Invalid role specified');
+  }
+
+  const cleanUser = targetUsername.trim().toLowerCase();
+  const user = mockUsersDb.find(u => u.username === cleanUser);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  user.role = newRole; 
+  return { username: user.username, role: user.role };
+};
+
