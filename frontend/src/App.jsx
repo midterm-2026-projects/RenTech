@@ -11,6 +11,7 @@ import StaffManagement from "./components/StaffManagement";
 import AIBusinessInsights from "./components/AIBusinessInsights";
 import SmartInventoryOptimization from "./components/SmartInventoryOptimization";
 import CustomerChat from "./components/CustomerChat";
+import Transaction from "./components/Transaction";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,7 +99,7 @@ function App() {
           </button>
         )}
 
-        {/* KPI Cards */}
+        {/* 1. KPI Cards */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             1. KPI Cards Component
@@ -106,7 +107,7 @@ function App() {
           <KPICards />
         </section>
 
-        {/* Analytics Dashboard */}
+        {/* 2. Analytics Dashboard */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             2. Analytics Dashboard Component
@@ -114,7 +115,7 @@ function App() {
           <AnalyticsDashboard />
         </section>
 
-        {/* Catalog */}
+        {/* 3. Catalog */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             3. Catalog Component
@@ -122,7 +123,14 @@ function App() {
           <Catalog />
         </section>
 
-        {/* Collection with Product Cards */}
+        {/* 5. Product Card Heading (Solo photo is removed, heading stays here) */}
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-600 border-b pb-2">
+            5. Product Card Component
+          </h2>
+        </div>
+
+        {/* Collection Grid Container (The 4 pictures layout) */}
         <section className="mb-10 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
@@ -155,7 +163,7 @@ function App() {
           </div>
         </section>
 
-        {/* Booking Form */}
+        {/* 4. Booking Form */}
         {isBookingOpen && (
           <section className="mb-10">
             <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
@@ -165,24 +173,7 @@ function App() {
           </section>
         )}
 
-        {/* Product Card */}
-        <section className="mb-10">
-          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
-            5. Product Card Component
-          </h2>
-          <ProductCard
-            product={{
-              name: "Pink Gown",
-              price: 5000,
-              status: "Available",
-              category: "Gowns",
-              image:
-                "https://images.unsplash.com/photo-1566699265033-ad62ebca60ee?q=80&w=869&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-            }}
-          />
-        </section>
-
-        {/* Search & Filter */}
+        {/* 6. Search & Filter */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             6. Search & Filter Component
@@ -195,7 +186,7 @@ function App() {
           />
         </section>
 
-        {/* Login */}
+        {/* 7. Login */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             7. Login Component
@@ -206,7 +197,7 @@ function App() {
           />
         </section>
 
-        {/* Sign Up */}
+        {/* 8. Sign Up */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             8. Sign Up Component
@@ -220,7 +211,7 @@ function App() {
           />
         </section>
 
-        {/* AI Business Insights */}
+        {/* 9. AI Business Insights */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             9. Generative AI Business Insights
@@ -231,7 +222,7 @@ function App() {
           />
         </section>
 
-        {/* Smart Inventory Optimization */}
+        {/* 10. Smart Inventory Optimization */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             10. Smart Inventory & Sales Optimization
@@ -239,7 +230,7 @@ function App() {
           <SmartInventoryOptimization metrics={mockMetrics} />
         </section>
 
-        {/* Customer Chat */}
+        {/* 11. Customer Chat */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             11. Customer Support Assistant
@@ -280,12 +271,24 @@ function App() {
           />
         </section>
 
-        {/* Staff Management */}
+        {/* 12. Staff Management */}
         <section className="mb-10">
           <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
             12. Staff Management Component
           </h2>
           <StaffManagement />
+        </section>
+
+        {/* 13. Transaction Log */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            13. Transaction Log Component
+          </h2>
+          <div className="flex justify-center w-full">
+            <div className="w-full max-w-7xl px-4">
+              <Transaction />
+            </div>
+          </div>
         </section>
       </div>
     </div>
