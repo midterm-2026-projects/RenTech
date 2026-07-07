@@ -15,6 +15,7 @@ import AIBusinessInsights from "./components/AIBusinessInsights";
 import SmartInventoryOptimization from "./components/SmartInventoryOptimization";
 import CustomerChat from "./components/CustomerChat";
 import Transaction from "./components/Transaction";
+import TransactionDashboard from "./components/TransactionDashboard";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -261,6 +262,14 @@ function App() {
               <Transaction />
             </div>
           </div>
+        </section>
+
+        {/* 14. Transaction Dashboard */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold text-gray-600 mb-4 border-b pb-2">
+            14. Transaction Dashboard Component
+          </h2>
+          <TransactionDashboard />
         </section>
       </div>
     </div>
