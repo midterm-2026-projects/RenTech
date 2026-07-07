@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { assignUserRole, getRentalHistory, getTransactionSummary } from "../../service/transactionMonitoring.service.js"; 
+import { describe, it, expect } from "vitest";
+import { assignUserRole, getRentalHistory, getTransactionSummary } from "../../service/transactionMonitoring.service.js";
 
 describe("RenTech Week 2 Day 2 - Transaction Monitoring Test Suite", () => {
 
@@ -32,7 +32,27 @@ describe("RenTech Week 2 Day 2 - Transaction Monitoring Test Suite", () => {
     it("should calculate correct total numerical metrics for the entire system", async () => {
       const summary = await getTransactionSummary();
       expect(summary.totalTransactions).toBe(3);
-      expect(summary.totalRevenue).toBe(320); // 100 + 70 + 150
+      expect(summary.totalRevenue).toBe(320); 
     });
   });
+
+  // WEEK 3 UNIT TESTS - ERROR HANDLING VALIDATION
+  describe("Rental History Backend Search - Functional Logic", () => {
+
+    it("should filter rental records accurately by status", async () => {
+      const records = await getRentalHistory({ status: "Completed" });
+      expect(records.length).toBeGreaterThan(0);
+      records.forEach(record => {
+        expect(record.status.toLowerCase()).toBe("completed");
+      });
+    });
+
+    it("should filter rental records using case-insensitive partial matching for itemName", async () => {
+      const records = await getRentalHistory({ itemName: "lap" });
+      expect(records.length).toBeGreaterThan(0);
+      records.forEach(record => {
+        expect(record.itemName.toLowerCase()).toContain("lap");
+      });
+    });
+  })
 });
