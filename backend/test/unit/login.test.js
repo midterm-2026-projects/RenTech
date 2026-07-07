@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { authenticateUser, registerNewCustomer, verifyRolePermission } from '../../service/login.service.js';
+import { authenticateUser, registerNewCustomer, verifyRolePermission, assignUserRole } from '../../service/login.service.js';
 
 describe('Week 2 Day 1 - Login & Role Management Testing', () => {
 
@@ -43,4 +43,25 @@ describe('Week 2 Day 1 - Login & Role Management Testing', () => {
     expect(hasAccess).toBe(false); 
   });
 
+  describe("Role Assignment Backend Models & Logic", () => {
+      it("should allow an Admin to successfully change a user's role", async () => {
+        const updatedUser = await assignUserRole("customer", "Staff", "Admin");
+        expect(updatedUser).toBeDefined();
+        expect(updatedUser.username).toBe("customer");
+        expect(updatedUser.role).toBe("Staff");
+      });
+  
+      it("should throw an error if a non-Admin tries to change a role", async () => {
+        await expect(
+          assignUserRole("customer", "Admin", "Staff")
+        ).rejects.toThrow("Unauthorized: Only Admins can assign roles");
+      });
+  
+      it("should throw an error if an invalid role is assigned", async () => {
+        await expect(
+          assignUserRole("customer", "SuperUser", "Admin")
+        ).rejects.toThrow("Invalid role specified");
+      });
+    });
 });
+
