@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import React, { useState } from 'react';
-import SearchAndFilter from '../components/SearchAndFilter';
+import SearchAndFilter from '../../components/SearchAndFilter';
 
 
 const InteractiveSearchFilter = ({ onCategoryChange }) => {

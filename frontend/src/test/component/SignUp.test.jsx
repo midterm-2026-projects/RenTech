@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import Signup from "../components/SignUp.jsx";
+import Signup from "../../components/SignUp.jsx";
 
 describe("RenTech Sign Up Test Suite", () => {
   const mockOnLogin = vi.fn();

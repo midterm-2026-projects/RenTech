@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import KPICards from '../components/KPICards';
+import KPICards from '../../components/KPICards';
 
 describe('KPI Cards Component', () => {
   

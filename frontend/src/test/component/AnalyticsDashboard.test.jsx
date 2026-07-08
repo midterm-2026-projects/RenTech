@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import AnalyticsDashboard from '../../components/AnalyticsDashboard';
 
 vi.mock('recharts', async () => {
   const actual = await vi.importActual('recharts');

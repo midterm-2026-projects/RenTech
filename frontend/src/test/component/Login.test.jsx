@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import Login, { saveSession, getSession, clearSession } from "../components/Login.jsx"; 
+import Login, { saveSession, getSession, clearSession } from "../../components/Login.jsx"; 
 
 describe("RenTech Login, Authentication & Session Test Suite", () => {
   const mockOnLogin = vi.fn();

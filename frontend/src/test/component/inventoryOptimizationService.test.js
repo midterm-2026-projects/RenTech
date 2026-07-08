@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateOptimizationScore,
   generatePromotionRecommendations,
-} from "../services/inventoryOptimizationService";
+} from "../../services/inventoryOptimizationService";
 
 describe("inventoryOptimizationService", () => {
   describe("calculateOptimizationScore", () => {

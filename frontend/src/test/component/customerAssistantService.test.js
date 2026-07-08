@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateCustomerResponse } from "../services/customerAssistantService";
+import { generateCustomerResponse } from "../../services/customerAssistantService";
 
 describe("customerAssistantService", () => {
   const mockProducts = [
