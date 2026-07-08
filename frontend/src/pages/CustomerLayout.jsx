@@ -1,36 +1,223 @@
-import ChatAssistantWidget from '../components/ChatAssistantWidget';
+import React, { useState } from 'react';
+import { LayoutGrid, Clock, LogOut, X } from "lucide-react";
 
-const sampleProducts = [
-  { id: 1, name: "Ivory Lace Gown", category: "wedding", color: "ivory" },
-  { id: 2, name: "Satin Ballgown", category: "evening", color: "navy" },
-  { id: 3, name: "Velvet Cloak", category: "costume", color: "burgundy" },
-  { id: 4, name: "Floral Maxi Dress", category: "casual", color: "multi" },
-  { id: 5, name: "Red Carpet Gown", category: "evening", color: "red" },
+// FIXED: Adjusted paths to correctly look up one level into the components folder
+import Catalog from '../components/Catalog.jsx';
+import SearchAndFilter from '../components/SearchAndFilter.jsx';
+import ProductCard from '../components/ProductCard.jsx';
+import BookingForm from '../components/BookingForm.jsx';
+import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
+
+const INITIAL_PRODUCTS = [
+  {
+    id: 'BK-839260',
+    name: "Emerald Silk Mermaid Evening Gown",
+    price: 4500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=500&auto=format&fit=crop&q=80", 
+    status: "Available"
+  },
+  {
+    id: 'BK-112233',
+    name: "A-Line Ivory Lace Wedding Gown",
+    price: 7500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=500&auto=format&fit=crop&q=80",
+    status: "Rented"
+  },
+  {
+    id: 'BK-445566',
+    name: "Midnight Black Peak Lapel Tuxedo",
+    price: 3800,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1593030103066-0093718efeb9?w=500&auto=format&fit=crop&q=80",
+    status: "Maintenance"
+  },
+  {
+    id: 'BK-778899',
+    name: "Modern Charcoal Grey Slim Suit",
+    price: 3200,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80",
+    status: "Overdue"
+  }
 ];
 
-const CustomerLayout = () => {
+export default function CustomerLayout() {
+  const [activeTab, setActiveTab] = useState("Collection");
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const filteredProducts = INITIAL_PRODUCTS.filter((product) => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = selectedCategory === "All" || product.status === selectedCategory;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getButtonStyles = (tabName) => {
+    const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer text-left text-xs";
+    if (activeTab === tabName) {
+      return `${baseStyle} bg-rose-50/60 text-rose-500`;
+    }
+    return `${baseStyle} text-gray-500 hover:bg-gray-50 hover:text-gray-900`;
+  };
+
+  const getIconStyles = (tabName) => {
+    return activeTab === tabName ? "w-4 h-4 text-rose-500" : "w-4 h-4 text-gray-400";
+  };
+
+  const handleConfirmSignOut = () => {
+    setShowSignOutModal(false);
+    alert("Signing out..."); 
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">RenTech</h1>
-          <nav className="flex items-center gap-6 text-sm font-medium text-gray-600">
-            <a href="/catalog" className="hover:text-gray-900 transition-colors">Catalog</a>
-            <a href="/bookings" className="hover:text-gray-900 transition-colors">My Bookings</a>
+    <div className="flex min-h-screen bg-[#fafafa] font-sans antialiased">
+      {/* Sidebar: Anchored identically to Admin Layout */}
+      <aside className="w-56 bg-white border-r border-gray-100 p-3 flex flex-col justify-between shrink-0 fixed top-0 bottom-0 left-0 z-20">
+        <div>
+          {/* Profile Match Header */}
+          <div className="flex items-center space-x-2.5 mb-4 pl-1">
+            <div className="w-8 h-8 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50 shadow-sm">
+              <div className="w-6 h-6 rounded-full bg-[#801818] flex items-center justify-center text-white text-[10px]">
+                👗
+              </div>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900 text-xs leading-none">Maria Santos</h4>
+              <p className="text-[10px] text-gray-400 mt-0.5">Customer</p>
+            </div>
+          </div>
+
+          {/* Nav Items Group */}
+          <nav className="space-y-0.5">
+            <button 
+              onClick={() => setActiveTab("Collection")}
+              className={getButtonStyles("Collection")}
+            >
+              <LayoutGrid className={getIconStyles("Collection")} />
+              <span>Collection</span>
+            </button>
+
+            <button 
+              onClick={() => setActiveTab("Transactions")}
+              className={getButtonStyles("Transactions")}
+            >
+              <Clock className={getIconStyles("Transactions")} />
+              <span>Transactions</span>
+            </button>
           </nav>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="text-center py-20">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Welcome to RenTech</h2>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Browse our collection of premium rental wear and book your perfect outfit.
-          </p>
+
+        {/* Sidebar Footer Status Frame */}
+        <div className="space-y-2 pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center space-x-2">
+              <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50">
+                <div className="w-5 h-5 rounded-full bg-[#801818] flex items-center justify-center text-white text-[8px]">
+                  👗
+                </div>
+              </div>
+              <div>
+                <h5 className="font-semibold text-gray-800 text-[10px] leading-none">Maria Santos</h5>
+                <p className="text-[8px] text-gray-400 mt-0.5">Online</p>
+              </div>
+            </div>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm"></span>
+          </div>
+
+          <button 
+            onClick={() => setShowSignOutModal(true)}
+            className="w-full flex items-center space-x-2 px-3 py-1 text-gray-500 hover:text-rose-500 font-medium text-xs transition cursor-pointer text-left"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
+          </button>
         </div>
-      </main>
-      <ChatAssistantWidget products={sampleProducts} />
+      </aside>
+
+      {/* Main Container Viewport Panel Frame */}
+      <div className="flex-1 pl-56">
+        <div className="p-6 lg:p-8 max-w-[1400px]">
+          {/* Header Content Alignment Matching Admin Style */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Collection</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Browse our premium formal wear collection.</p>
+          </div>
+
+          {/* Controls Filter Elements Card Frame */}
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-6">
+            <SearchAndFilter
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+          </div>
+
+          {/* Product Feed Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-xl border border-gray-100 text-sm text-gray-400 font-medium">
+              No items match your search filters.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+              {filteredProducts.map((product) => (
+                <div 
+                  key={product.id} 
+                  onClick={() => product.status === 'Available' && setIsModalOpen(true)}
+                  className="transition hover:-translate-y-0.5 duration-200"
+                  style={{ cursor: product.status === 'Available' ? 'pointer' : 'default' }}
+                >
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Embedded Widgets & Overlays */}
+      <ChatAssistantWidget products={INITIAL_PRODUCTS} />
+
+      {isModalOpen && (
+        <BookingForm onClose={() => setIsModalOpen(false)} />
+      )}
+
+      {showSignOutModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-150">
+            <button 
+              onClick={() => setShowSignOutModal(false)}
+              className="absolute top-4 right-4 p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Sign Out</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Are you sure you want to sign out? You will be returned to the landing page.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowSignOutModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSignOut}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-sm font-semibold text-white shadow-sm transition"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default CustomerLayout;
+}
