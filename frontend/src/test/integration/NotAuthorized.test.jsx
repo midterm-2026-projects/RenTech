@@ -2,9 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import NotAuthorized from "../components/NotAuthorized";
-import ProtectedRoute from "../components/ProtectedRoute";
-import * as LoginModule from "../components/Login";
+import NotAuthorized from "../../pages/NotAuthorized";
+import ProtectedRoute from "../../components/ProtectedRoute";
+import * as LoginModule from "../../components/Login";
 
 describe("/unauthorized - NotAuthorized page", () => {
   function renderNotAuthorized(initialEntries = ["/unauthorized"]) {

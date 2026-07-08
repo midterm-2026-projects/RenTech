@@ -1,8 +1,8 @@
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import ProtectedRoute from "../components/ProtectedRoute";
-import * as LoginModule from "../components/Login";
+import ProtectedRoute from "../../components/ProtectedRoute";
+import * as LoginModule from "../../components/Login";
 
 function renderProtected(allowedRoles, content = <div>Protected Content</div>, initialEntries = ["/protected"]) {
   return render(

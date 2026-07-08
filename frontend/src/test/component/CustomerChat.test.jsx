@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import CustomerChat from "../components/CustomerChat";
-import * as customerService from "../services/customerAssistantService";
+import CustomerChat from "../../components/CustomerChat";
+import * as customerService from "../../services/customerAssistantService";
 
 describe("CustomerChat Component", () => {
   beforeEach(() => {

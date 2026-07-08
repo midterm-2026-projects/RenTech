@@ -2,8 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import CustomerLayout from "../pages/CustomerLayout";
-import * as customerService from "../services/customerAssistantService";
+import CustomerLayout from "../../pages/CustomerLayout";
+import * as customerService from "../../services/customerAssistantService";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {

@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import ChatAssistantWidget from "../components/ChatAssistantWidget";
-import * as customerService from "../services/customerAssistantService";
+import ChatAssistantWidget from "../../components/ChatAssistantWidget";
+import * as customerService from "../../services/customerAssistantService";
 
 describe("ChatAssistantWidget Component", () => {
   beforeEach(() => {

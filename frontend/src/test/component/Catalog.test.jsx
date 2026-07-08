@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Catalog from '../components/Catalog';
+import Catalog from '../../components/Catalog';
 
 describe('Catalog Layout Tests', () => {
   test('renders the Customer Portal badge smoothly and correctly', () => {

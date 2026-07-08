@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
-import StaffManagement from "../components/StaffManagement.jsx"; 
+import StaffManagement from "../../components/StaffManagement.jsx"; 
 
 describe("Staff Management - Video Validation Test Suite", () => {
   beforeEach(() => {

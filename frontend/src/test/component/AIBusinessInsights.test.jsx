@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import AIBusinessInsights from '../components/AIBusinessInsights';
+import AIBusinessInsights from '../../components/AIBusinessInsights';
 
 describe('AIBusinessInsights Component', () => {
 
