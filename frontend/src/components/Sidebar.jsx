@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X } from "lucide-react";
 
-export default function Sidebar() {
-  const [activeTab, setActiveTab] = useState("Dashboard");
+export default function Sidebar({ currentTab, onTabChange }) {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const getButtonStyles = (tabName) => {
     const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer text-left text-xs";
     
-    if (activeTab === tabName) {
+    // Check using lowercase strings to match the routing state
+    if (currentTab === tabName) {
       return `${baseStyle} bg-rose-50/60 text-rose-500`;
     }
     return `${baseStyle} text-gray-500 hover:bg-gray-50 hover:text-gray-900`;
   };
 
   const getIconStyles = (tabName) => {
-    return activeTab === tabName ? "w-4 h-4 text-rose-500" : "w-4 h-4 text-gray-400";
+    return currentTab === tabName ? "w-4 h-4 text-rose-500" : "w-4 h-4 text-gray-400";
   };
 
   const handleConfirmSignOut = () => {
@@ -25,10 +25,10 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Ginawang siksik ang h-full layout para sumunod sa 400px limitation ng parent viewer */}
+      {/* Container structured to fill the layout frame */}
       <aside className="w-full bg-white text-gray-700 p-3 flex flex-col justify-between font-sans h-full">
         <div>
-          {/* Top Admin Profile Section - Compact Margins */}
+          {/* Top Admin Profile Section */}
           <div className="flex items-center space-x-2.5 mb-3">
             <div className="w-8 h-8 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50 shadow-sm">
               <div className="w-6 h-6 rounded-full bg-[#801818] flex items-center justify-center text-white text-[10px] font-serif">
@@ -41,42 +41,42 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* Sidebar Navigation Buttons - Reduced Gaps */}
+          {/* Sidebar Navigation Buttons */}
           <nav className="space-y-0.5">
             {/* Dashboard */}
             <button 
-              onClick={() => setActiveTab("Dashboard")}
-              className={getButtonStyles("Dashboard")}
+              onClick={() => onTabChange("dashboard")}
+              className={getButtonStyles("dashboard")}
             >
-              <LayoutGrid className={getIconStyles("Dashboard")} />
+              <LayoutGrid className={getIconStyles("dashboard")} />
               <span>Dashboard</span>
             </button>
 
             {/* Inventory */}
             <button 
-              onClick={() => setActiveTab("Inventory")}
-              className={getButtonStyles("Inventory")}
+              onClick={() => onTabChange("inventory")}
+              className={getButtonStyles("inventory")}
             >
-              <ClipboardList className={getIconStyles("Inventory")} />
+              <ClipboardList className={getIconStyles("inventory")} />
               <span>Inventory</span>
             </button>
 
             {/* Transactions */}
             <button 
-              onClick={() => setActiveTab("Transactions")}
-              className={getButtonStyles("Transactions")}
+              onClick={() => onTabChange("transactions")}
+              className={getButtonStyles("transactions")}
             >
-              <Clock className={getIconStyles("Transactions")} />
+              <Clock className={getIconStyles("transactions")} />
               <span>Transactions</span>
             </button>
 
             {/* AI Intelligence */}
             <button 
-              onClick={() => setActiveTab("AI Intelligence")}
-              className={`${getButtonStyles("AI Intelligence")} justify-between`}
+              onClick={() => onTabChange("ai intelligence")}
+              className={`${getButtonStyles("ai intelligence")} justify-between`}
             >
               <div className="flex items-center space-x-2.5">
-                <Sparkles className={getIconStyles("AI Intelligence")} />
+                <Sparkles className={getIconStyles("ai intelligence")} />
                 <span>AI Intelligence</span>
               </div>
               <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
@@ -84,16 +84,16 @@ export default function Sidebar() {
 
             {/* System Settings */}
             <button 
-              onClick={() => setActiveTab("System Settings")}
-              className={getButtonStyles("System Settings")}
+              onClick={() => onTabChange("settings")}
+              className={getButtonStyles("settings")}
             >
-              <Settings className={getIconStyles("System Settings")} />
+              <Settings className={getIconStyles("settings")} />
               <span>System Settings</span>
             </button>
           </nav>
         </div>
 
-        {/* Bottom Status & Actions Container - Squeezed borders & spacing to guarantee visibility */}
+        {/* Bottom Status & Actions Container */}
         <div className="space-y-2 pt-2 border-t border-gray-100">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center space-x-2">
