@@ -135,9 +135,7 @@ app.use('/api', transactionRoutes);
 app.use('/api', forecastRouter);
 app.use('/api', aiRouter);
 
-// ====================
-// Start Server
-// ====================
+
 const isMainModule = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
 if (isMainModule) {
   app.listen(PORT, () => {

@@ -10,6 +10,7 @@ describe("CustomerLayout Component (Integration)", () => {
     vi.spyOn(customerService, "generateCustomerResponse").mockImplementation(
       (input) => `Mock reply for: "${input}"`
     );
+    vi.spyOn(window, "alert").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -24,34 +25,60 @@ describe("CustomerLayout Component (Integration)", () => {
     );
   }
 
-  it("renders the RenTech header and welcome message", () => {
+  it("renders the primary Collection page header and description text", () => {
     renderCustomerLayout();
-    expect(screen.getByText("RenTech")).toBeInTheDocument();
-    expect(screen.getByText("Welcome to RenTech")).toBeInTheDocument();
-  });
-
-  it("renders the welcome description text", () => {
-    renderCustomerLayout();
+    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Browse our collection of premium rental wear and book your perfect outfit/i
-      )
+      screen.getByText(/Browse our premium formal wear collection/i)
     ).toBeInTheDocument();
   });
 
-  it("renders navigation links for catalog and bookings", () => {
+  it("renders sidebar navigation buttons for Collection and Transactions", () => {
     renderCustomerLayout();
-    expect(screen.getByText("Catalog")).toBeInTheDocument();
-    expect(screen.getByText("My Bookings")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Collection/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Transactions/i })).toBeInTheDocument();
   });
 
-  it("nav links point to the correct paths", () => {
+  it("renders the sidebar profile identity header and online status footer", () => {
     renderCustomerLayout();
-    const catalogLink = screen.getByText("Catalog").closest("a");
-    const bookingsLink = screen.getByText("My Bookings").closest("a");
-    expect(catalogLink).toHaveAttribute("href", "/catalog");
-    expect(bookingsLink).toHaveAttribute("href", "/bookings");
+    const userProfileNames = screen.getAllByText("Maria Santos");
+    expect(userProfileNames.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Customer")).toBeInTheDocument();
+    expect(screen.getByText("Online")).toBeInTheDocument();
   });
+
+  it("maintains collection display panel when alternative sidebar paths are triggered", async () => {
+    const user = userEvent.setup();
+    renderCustomerLayout();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+    
+    const transactionsBtn = screen.getByRole("button", { name: /Transactions/i });
+    await user.click(transactionsBtn);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+  });
+
+  it("handles user logout process modal state verification flow correctly", async () => {
+    const user = userEvent.setup();
+    renderCustomerLayout();
+
+    const sidebarSignOutBtn = screen.getByRole("button", { name: /Sign Out/i });
+    await user.click(sidebarSignOutBtn);
+
+    expect(screen.getByText("Confirm Sign Out")).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to sign out?/i)).toBeInTheDocument();
+
+    const modalButtons = screen.getAllByRole("button", { name: "Sign Out" });
+    const modalConfirmBtn = modalButtons[modalButtons.length - 1]; 
+    await user.click(modalConfirmBtn);
+
+    expect(window.alert).toHaveBeenCalledWith("Signing out...");
+  });
+
+  // =========================================================================
+  // ORIGINAL CHAT ASSISTANT TESTING SECTIONS (UNTOUCHED)
+  // =========================================================================
 
   it("renders the floating chat widget button", () => {
     renderCustomerLayout();

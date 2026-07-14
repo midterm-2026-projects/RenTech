@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import AdminLayout from "../../pages/AdminLayout";
 import * as LoginModule from "../../components/Login";
 
@@ -34,7 +35,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Admin Dashboard")).toBeInTheDocument();
+      expect(screen.getByText(/Admin Portal - dashboard/i)).toBeInTheDocument();
     });
   });
 
@@ -53,7 +54,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Generative AI Business Insights")).toBeInTheDocument();
+      expect(screen.getByText("AI Business Insights")).toBeInTheDocument();
       expect(
         screen.getByText("Rental demand for winter coats is up 20% this week.")
       ).toBeInTheDocument();
@@ -90,7 +91,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.queryByText("Admin Dashboard")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
       expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
     });
   });
@@ -100,7 +101,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.queryByText("Admin Dashboard")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
       expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
     });
   });
@@ -109,7 +110,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.queryByText("Admin Dashboard")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
       expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
     });
   });
@@ -141,6 +142,52 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.getAllByText("Admin").length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  /* ========================================================================
+     NEW INTERACTION & BEHAVIOR TESTS FOR TRANSACTIONS & SYSTEM SETTINGS
+     ======================================================================== */
+
+  it("switches to the Transaction Dashboard view when clicking the Transactions button", async () => {
+    LoginModule.saveSession("Admin", "admin");
+    renderAdminLayout();
+
+    // 1. Wait for dashboard view to settle
+    await waitFor(() => {
+      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+    });
+
+    // 2. Locate and click the Transactions tab inside the sidebar
+    const transactionsBtn = screen.getByRole("button", { name: /transactions/i });
+    await userEvent.click(transactionsBtn);
+
+    // 3. Verify page content updates to reflect the Transaction view state change
+    await waitFor(() => {
+      expect(screen.getByText("Admin Portal - transactions")).toBeInTheDocument();
+      expect(screen.getByText("Digital logbook of all rental transactions.")).toBeInTheDocument();
+      expect(screen.getByText("Vintage Gatsby Sequin Dress")).toBeInTheDocument();
+    });
+  });
+
+  it("switches to the System Settings view when clicking the System Settings button", async () => {
+    LoginModule.saveSession("Admin", "admin");
+    renderAdminLayout();
+
+    // 1. Wait for dashboard view to settle
+    await waitFor(() => {
+      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+    });
+
+    // 2. Locate and click the System Settings tab inside the sidebar
+    const settingsBtn = screen.getByRole("button", { name: /system settings/i });
+    await userEvent.click(settingsBtn);
+
+    // 3. Verify page content updates to reflect the System Settings view state change
+    await waitFor(() => {
+      expect(screen.getByText("Admin Portal - settings")).toBeInTheDocument();
+      expect(screen.getByText("Account & Settings")).toBeInTheDocument();
+      expect(screen.getByText("Semaphore SMS Gateway")).toBeInTheDocument();
     });
   });
 });

@@ -1,19 +1,10 @@
 import { getSupabase } from '../config/supabaseClient.js';
-import { query } from '../config/database.js';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { runMigrations } from '../migrations/runner.js';
 
 export async function runMigration() {
-  const sqlPath = join(__dirname, '..', 'migrations', '001_analytics_schema.sql');
-  const sql = readFileSync(sqlPath, 'utf8');
-
   try {
-    await query(sql);
-    return { error: null };
+    const result = await runMigrations();
+    return { error: null, ...result };
   } catch (error) {
     return { error };
   }
