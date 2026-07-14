@@ -1,4 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// Discover every migration file on disk so this test stays correct as new
+// migrations (002_, 003_, ...) are added.
+const ALL_MIGRATIONS = readdirSync(join(__dirname, '../../migrations')).filter(
+  (f) => f.toLowerCase().endsWith('.sql')
+);
 
 const state = vi.hoisted(() => ({ applied: [] }));
 
@@ -40,11 +50,12 @@ describe('migration runner', () => {
   });
 
   it('skips migrations that are already applied', async () => {
-    state.applied = ['001_analytics_schema.sql'];
+    // Mark every migration on disk as already applied.
+    state.applied = [...ALL_MIGRATIONS];
     const result = await runMigrations();
 
     expect(result.ran).toEqual([]);
-    expect(result.skipped).toContain('001_analytics_schema.sql');
+    expect(result.skipped).toEqual(expect.arrayContaining(['001_analytics_schema.sql']));
 
     const attempted = query.mock.calls.some(
       c => typeof c[0] === 'string' && c[0].includes("VALUES ('001_analytics_schema.sql')")
