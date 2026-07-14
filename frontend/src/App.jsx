@@ -50,28 +50,4 @@ function App() {
   );
 }
 
-function HomePage() {
-  const session = getSession();
-  if (session?.role === "Admin") {
-    return <Navigate to="/admin" replace />;
-  }
-  if (session?.role) {
-    return <Navigate to="/customer" replace />;
-  }
-  return <Navigate to="/login" replace />;
-}
-
-function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/admin" element={<AdminLayout />} />
-      <Route path="/customer" element={<CustomerLayout />} />
-      <Route path="/unauthorized" element={<NotAuthorized />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
-
 export default App;
