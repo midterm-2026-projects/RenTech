@@ -10,6 +10,7 @@ import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
 import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
 import analyticsModel from './model/analytics.model.js';
+import { register, login } from './controller/loginController.js';
 
 // Create Express app
 const app = express();
@@ -93,9 +94,8 @@ productRoutes.get('/products', (req, res) => {
 // ====================
 // Login Endpoints
 // ====================
-loginRoutes.post('/login', (req, res) => {
-  res.json({ success: true });
-});
+loginRoutes.post('/register', register);
+loginRoutes.post('/login', login);
 
 // ====================
 // Migration Endpoint
@@ -138,7 +138,7 @@ app.use('/api', transactionRoutes);
 app.use('/api', forecastRouter);
 app.use('/api', aiRouter);
 app.use('/api/analytics', analyticsRouter);
-
+app.use('/api/auth', loginRoutes);
 
 const isMainModule = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
 if (isMainModule) {
