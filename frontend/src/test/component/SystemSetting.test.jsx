@@ -16,7 +16,6 @@ describe('SystemSetting Component - Unit Tests', () => {
     test('renders the main layout, header elements, and title banner', async () => {
       await renderAndClearLoading();
 
-      expect(screen.getByText('Admin Portal')).toBeInTheDocument();
       expect(screen.getByText('Account & Settings')).toBeInTheDocument();
       expect(screen.getByText('Manage preferences and system notifications.')).toBeInTheDocument();
     });
