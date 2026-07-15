@@ -15,6 +15,20 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        if (!email || typeof email !== 'string' || email.trim() === '') {
+            return res.status(400).json({ success: false, message: 'Valid email is required' });
+        }
+
+        if (!password || typeof password !== 'string' || password.trim() === '') {
+            return res.status(400).json({ success: false, message: 'Password is required' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ success: false, message: 'Invalid email format' });
+        }
+
         const session = await loginService.loginUser(email, password);
         res.status(200).json({ success: true, session });
     } catch (error) {
