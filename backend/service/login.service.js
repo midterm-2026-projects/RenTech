@@ -1,56 +1,88 @@
-import { UserModel, RentalRecordModel } from '../model/login.model.js'; 
+import { getSupabase } from '../config/supabaseClient.js';
 
-const mockUsersDb = [
-  new UserModel({ username: 'admin', password: 'admin', role: 'Admin' }),
-  new UserModel({ username: 'staff', password: 'staff', role: 'Staff' }),
-  new UserModel({ username: 'customer', password: 'customer', role: 'Customer' })
+const mockUsers = [
+    { username: 'admin', password: 'admin', role: 'Admin' },
+    { username: 'staff', password: 'staff', role: 'Staff' },
+    { username: 'customer', password: 'customer', role: 'Customer' },
 ];
 
+const validRoles = ['Admin', 'Staff', 'Customer'];
+
+export const registerUser = async (email, password, username) => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { username: username } } // Ensure this matches trigger expectation
+    });
+    if (error) throw error;
+    return data;
+};
+
+export const loginUser = async (email, password) => {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error("Supabase not initialized");
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+    if (error) throw error;
+    return data.session;
+};
+
 export const authenticateUser = async (username, password) => {
-  const cleanUser = username.trim().toLowerCase();
-  const user = mockUsersDb.find(u => u.username === cleanUser);
-  
-  if (user && user.password === password) {
-    return { username: user.username, role: user.role };
-  }
-  return null;
+    const user = mockUsers.find(
+        (item) => item.username === username && item.password === password,
+    );
+
+    if (!user) return null;
+
+    return {
+        username: user.username,
+        role: user.role,
+    };
 };
 
 export const registerNewCustomer = async (username, password) => {
-  const cleanUser = username.trim().toLowerCase();
-  const exists = mockUsersDb.some(u => u.username === cleanUser);
-  
-  if (exists) return null;
+    const existingUser = mockUsers.find((item) => item.username === username);
 
-  const newUser = new UserModel({ username: cleanUser, password, role: 'Customer' });
-  mockUsersDb.push(newUser);
-  return { username: newUser.username, role: newUser.role };
+    if (existingUser) return null;
+
+    const newUser = {
+        username,
+        password,
+        role: 'Customer',
+    };
+
+    mockUsers.push(newUser);
+
+    return {
+        username: newUser.username,
+        role: newUser.role,
+    };
 };
 
-export const verifyRolePermission = (userRole, allowedRoles) => {
-  return allowedRoles.includes(userRole);
+export const verifyRolePermission = (role, allowedRoles) => {
+    return allowedRoles.includes(role);
 };
 
+export const assignUserRole = async (username, role, assignedByRole) => {
+    if (assignedByRole !== 'Admin') {
+        throw new Error('Unauthorized: Only Admins can assign roles');
+    }
 
-// WEEK2 DAY2
-export const assignUserRole = async (targetUsername, newRole, updaterRole) => {
-  if (updaterRole !== 'Admin') {
-    throw new Error('Unauthorized: Only Admins can assign roles');
-  }
+    if (!validRoles.includes(role)) {
+        throw new Error('Invalid role specified');
+    }
 
-  const validRoles = ['Admin', 'Staff', 'Customer'];
-  if (!validRoles.includes(newRole)) {
-    throw new Error('Invalid role specified');
-  }
+    const user = mockUsers.find((item) => item.username === username);
 
-  const cleanUser = targetUsername.trim().toLowerCase();
-  const user = mockUsersDb.find(u => u.username === cleanUser);
+    if (!user) return null;
 
-  if (!user) {
-    throw new Error('User not found');
-  }
+    user.role = role;
 
-  user.role = newRole; 
-  return { username: user.username, role: user.role };
+    return {
+        username: user.username,
+        role: user.role,
+    };
 };
-
