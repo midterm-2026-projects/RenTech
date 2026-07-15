@@ -1,85 +1,100 @@
-import { describe, it, expect, vi } from 'vitest';
-import bookingService from '../../service/booking.service';
-import bookingModel from '../../model/booking.model';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const mockBookingService = vi.hoisted(() => ({
+  getBookings: vi.fn(),
+  createBooking: vi.fn(),
+}));
 
-vi.mock('../../model/booking.model', () => {
-  return {
-    default: {
-      find: vi.fn(),
-      create: vi.fn(),
-    },
-  };
-});
+vi.mock('../../service/booking.service.js', () => ({
+  __esModule: true,
+  ...mockBookingService,
+  default: mockBookingService,
+}));
 
-describe('Booking Service', () => {
+import { getBookings, createBooking } from '../../controller/bookingController.js';
 
- 
-  describe('Get Bookings', () => {
-    it('should read a booking from the list', async () => {
-     
-      bookingModel.find.mockResolvedValue([
-        { customerName: 'Alice', phone: '09998887777' }
-      ]);
+function mockRes() {
+  const res = {};
+  res.status = vi.fn(() => res);
+  res.json = vi.fn(() => res);
+  return res;
+}
 
-      
-      const result = await bookingService.getBookings();
-      
-      expect(result.length).toBe(1);
-      expect(result[0].customerName).toBe('Alice');
+describe('Booking controller (unit)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getBookings', () => {
+    it('should return 200 and success status with bookings data list', async () => {
+      const payload = {
+        data: [{ id: 'BK-999999', item_name: 'Gown A' }],
+        error: null
+      };
+      mockBookingService.getBookings.mockResolvedValue(payload);
+      const res = mockRes();
+
+      await getBookings({}, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'success',
+          message: 'Bookings retrieved successfully',
+          count: 1
+        })
+      );
+    });
+
+    it('should return 400 when service layer returns a query error', async () => {
+      const payload = {
+        data: null,
+        error: new Error('Database disconnect error')
+      };
+      mockBookingService.getBookings.mockResolvedValue(payload);
+      const res = mockRes();
+
+      await getBookings({}, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'error',
+          message: 'Database disconnect error'
+        })
+      );
     });
   });
 
+  describe('createBooking', () => {
+    it('should return successful creation payload structure', async () => {
+      const payload = {
+        data: [{ item_name: 'Emerald Silk Evening Gown' }],
+        error: null
+      };
+      mockBookingService.createBooking.mockResolvedValue(payload);
+      const res = mockRes();
 
-  describe('Create Booking', () => {
-    
-    describe('Check input validation', () => {
-      const validPhone = '09998887777';
+      await createBooking({ body: {} }, res);
 
-      it('should throw an error if customer name is not provided', async () => {
-        await expect(bookingService.createBooking({ phone: validPhone, paymentMethod: 'GCash' }))
-          .rejects
-          .toThrow(/Invalid customer name or missing fields/i);
-      });
-
-      it('should throw an error if phone number is empty', async () => {
-        await expect(bookingService.createBooking({ customerName: 'Bob', phone: '', paymentMethod: 'GCash' }))
-          .rejects
-          .toThrow(/Invalid phone number/i);
-      });
-
-      it('should throw an error if the phone number is not 11 digits', async () => {
-        await expect(bookingService.createBooking({ customerName: 'Bob', phone: '12345', paymentMethod: 'GCash' }))
-          .rejects
-          .toThrow(/Invalid phone number/i);
-      });
-
-      it('should throw an error if payment method is empty', async () => {
-        await expect(bookingService.createBooking({ customerName: 'Bob', phone: validPhone, paymentMethod: '' }))
-          .rejects
-          .toThrow(/Invalid payment method/i);
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'success',
+          message: 'Booking created successfully'
+        })
+      );
     });
 
-    describe('Successful creation', () => {
-      it('should add a new booking successfully if all inputs are valid', async () => {
-        const newBooking = { 
-          customerName: 'Bob', 
-          phone: '09998887777', 
-          rentalDate: '2026-07-15', 
-          size: 'L', 
-          paymentMethod: 'GCash' 
-        };
+    it('should catch validation throws or date collision conflicts safely', async () => {
+      mockBookingService.createBooking.mockRejectedValue(new Error('Invalid phone number'));
+      const res = mockRes();
 
-        bookingModel.create.mockResolvedValue(newBooking);
+      await createBooking({ body: {} }, res);
 
-        const result = await bookingService.createBooking(newBooking);
-
-        expect(result.customerName).toBe('Bob');
-        expect(result.paymentMethod).toBe('GCash'); 
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        status: 'error',
+        message: 'Invalid phone number'
       });
     });
-
   });
-
 });

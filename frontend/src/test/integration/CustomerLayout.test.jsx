@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -47,16 +47,16 @@ describe("CustomerLayout Component (Integration)", () => {
     expect(screen.getByText("Online")).toBeInTheDocument();
   });
 
-  it("maintains collection display panel when alternative sidebar paths are triggered", async () => {
+  it("switches to transaction history panel when transactions sidebar path is triggered", async () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
-    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+    expect(screen.getByText(/Browse our premium formal wear collection/i)).toBeInTheDocument();
     
     const transactionsBtn = screen.getByRole("button", { name: /Transactions/i });
     await user.click(transactionsBtn);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+    expect(screen.queryByText(/Browse our premium formal wear collection/i)).not.toBeInTheDocument();
   });
 
   it("handles user logout process modal state verification flow correctly", async () => {
@@ -76,9 +76,84 @@ describe("CustomerLayout Component (Integration)", () => {
     expect(window.alert).toHaveBeenCalledWith("Signing out...");
   });
 
-  // =========================================================================
-  // ORIGINAL CHAT ASSISTANT TESTING SECTIONS (UNTOUCHED)
-  // =========================================================================
+
+  //  BOOKING FORM 
+
+
+  it("opens the complete booking form overlay when a product item card is triggered", async () => {
+    const user = userEvent.setup();
+    renderCustomerLayout();
+
+    expect(screen.queryByText("Complete Booking")).not.toBeInTheDocument();
+
+    const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
+    await user.click(availableItem);
+
+    expect(screen.getByRole("heading", { name: "Complete Booking" })).toBeInTheDocument();
+  });
+
+  it("fills out user info fields and toggles booking target identity options", async () => {
+    const user = userEvent.setup();
+    renderCustomerLayout();
+
+    const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
+    await user.click(availableItem);
+
+    const meToggleBtn = screen.getByRole("button", { name: "Me" });
+    const someoneElseToggleBtn = screen.getByRole("button", { name: "Someone else" });
+    
+    await user.click(someoneElseToggleBtn);
+    await user.click(meToggleBtn);
+
+    const nameInput = screen.getByPlaceholderText("Full Name");
+    const phoneInput = screen.getByPlaceholderText("Phone Number");
+    const addressInput = screen.getByPlaceholderText("Address");
+    const notesTextarea = screen.getByPlaceholderText(/special notes/i);
+
+    await user.type(nameInput, "Jane Doe");
+    await user.type(phoneInput, "09123456789");
+    await user.type(addressInput, "123 Luxury Lane, Manila");
+    await user.type(notesTextarea, "Prefer extra floor length alignment adjustments.");
+
+    expect(nameInput).toHaveValue("Jane Doe");
+    expect(phoneInput).toHaveValue("09123456789");
+    expect(addressInput).toHaveValue("123 Luxury Lane, Manila");
+    expect(notesTextarea).toHaveValue("Prefer extra floor length alignment adjustments.");
+  });
+
+  it("handles rental date picker inputs correctly", async () => {
+    renderCustomerLayout();
+
+    const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
+    fireEvent.click(availableItem);
+
+    const datePickerInput = document.querySelector('input[type="date"]') || 
+                            screen.queryByLabelText(/rental date/i) ||
+                            screen.getByText(/rental date/i).parentElement.querySelector('input');
+    
+    fireEvent.change(datePickerInput, { target: { value: "2026-07-25" } });
+    expect(datePickerInput.value).toBe("2026-07-25");
+  });
+
+  it("handles size option listings selection and process progression", async () => {
+    const user = userEvent.setup();
+    renderCustomerLayout();
+
+    const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
+    await user.click(availableItem);
+
+    const sizeSelectDropdown = screen.getByRole("combobox") || document.querySelector("select");
+
+    await user.selectOptions(sizeSelectDropdown, "Small (S)");
+    expect(sizeSelectDropdown.value).toBe("S");
+
+    const continueBtn = screen.getByRole("button", { name: "Continue to Payment" });
+    await user.click(continueBtn);
+  });
+
+
+  // CHAT ASSISTANT
+
 
   it("renders the floating chat widget button", () => {
     renderCustomerLayout();
@@ -138,7 +213,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Mock reply for: "Show me gowns"/i)
+        screen.getByText((content) => content.includes("Mock reply for: \"Show me gowns\""))
       ).toBeInTheDocument();
     });
   });
@@ -158,7 +233,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Mock reply for: "Rent a suit"/i)
+        screen.getByText((content) => content.includes("Mock reply for: \"Rent a suit\""))
       ).toBeInTheDocument();
     });
   });

@@ -7,41 +7,7 @@ import SearchAndFilter from '../components/SearchAndFilter.jsx';
 import ProductCard from '../components/ProductCard.jsx';
 import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
-
-const INITIAL_PRODUCTS = [
-  {
-    id: 'BK-839260',
-    name: "Emerald Silk Mermaid Evening Gown",
-    price: 4500,
-    category: "GOWN",
-    image: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=500&auto=format&fit=crop&q=80", 
-    status: "Available"
-  },
-  {
-    id: 'BK-112233',
-    name: "A-Line Ivory Lace Wedding Gown",
-    price: 7500,
-    category: "GOWN",
-    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=500&auto=format&fit=crop&q=80",
-    status: "Rented"
-  },
-  {
-    id: 'BK-445566',
-    name: "Midnight Black Peak Lapel Tuxedo",
-    price: 3800,
-    category: "SUIT",
-    image: "https://images.unsplash.com/photo-1593030103066-0093718efeb9?w=500&auto=format&fit=crop&q=80",
-    status: "Maintenance"
-  },
-  {
-    id: 'BK-778899',
-    name: "Modern Charcoal Grey Slim Suit",
-    price: 3200,
-    category: "SUIT",
-    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80",
-    status: "Overdue"
-  }
-];
+import Transaction from '../components/Transaction.jsx';
 
 export default function CustomerLayout() {
   const [activeTab, setActiveTab] = useState("Collection");
@@ -50,7 +16,9 @@ export default function CustomerLayout() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const filteredProducts = INITIAL_PRODUCTS.filter((product) => {
+  const productsList = ProductCard.products || [];
+
+  const filteredProducts = productsList.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedCategory === "All" || product.status === selectedCategory;
     return matchesSearch && matchesStatus;
@@ -141,46 +109,55 @@ export default function CustomerLayout() {
       {/* Main Container Viewport Panel Frame */}
       <div className="flex-1 pl-56">
         <div className="p-6 lg:p-8 max-w-[1400px]">
-          {/* Header Content Alignment Matching Admin Style */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Collection</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Browse our premium formal wear collection.</p>
-          </div>
+          
+          {/* SWITCH RENDERING SYSTEM BASED ON ACTIVETAB */}
+          {activeTab === "Collection" ? (
+            <>
+              {/* Header Content Alignment Admin */}
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Collection</h1>
+                <p className="text-xs text-gray-500 mt-0.5">Browse our premium formal wear collection.</p>
+              </div>
 
-          {/* Controls Filter Elements Card Frame */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-6">
-            <SearchAndFilter
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-            />
-          </div>
+              {/* Controls Filter Elements Card Frame */}
+              <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-6">
+                <SearchAndFilter
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                />
+              </div>
 
-          {/* Product Feed Grid */}
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border border-gray-100 text-sm text-gray-400 font-medium">
-              No items match your search filters.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-              {filteredProducts.map((product) => (
-                <div 
-                  key={product.id} 
-                  onClick={() => product.status === 'Available' && setIsModalOpen(true)}
-                  className="transition hover:-translate-y-0.5 duration-200"
-                  style={{ cursor: product.status === 'Available' ? 'pointer' : 'default' }}
-                >
-                  <ProductCard product={product} />
+              {/* Product Grid */}
+              {filteredProducts.length === 0 ? (
+                <div className="text-center py-12 bg-white rounded-xl border border-gray-100 text-sm text-gray-400 font-medium">
+                  No items match your search filters.
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {filteredProducts.map((product) => (
+                    <div 
+                      key={product.id} 
+                      onClick={() => product.status === 'Available' && setIsModalOpen(true)}
+                      className="transition hover:-translate-y-0.5 duration-200"
+                      style={{ cursor: product.status === 'Available' ? 'pointer' : 'default' }}
+                    >
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <Transaction /> 
           )}
+
         </div>
       </div>
 
-      {/* Embedded Widgets & Overlays */}
-      <ChatAssistantWidget products={INITIAL_PRODUCTS} />
+      {/* Widgets & Overlays */}
+      <ChatAssistantWidget products={productsList} />
 
       {isModalOpen && (
         <BookingForm onClose={() => setIsModalOpen(false)} />

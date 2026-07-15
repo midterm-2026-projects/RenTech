@@ -125,4 +125,40 @@ const styles = {
   },
 };
 
+
+ProductCard.products = [
+  {
+    id: 'BK-839260',
+    name: "Emerald Silk Mermaid Evening Gown",
+    price: 4500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=500&auto=format&fit=crop&q=80", 
+    status: "Available"
+  },
+  {
+    id: 'BK-112233',
+    name: "A-Line Ivory Lace Wedding Gown",
+    price: 7500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=500&auto=format&fit=crop&q=80",
+    status: "Rented"
+  },
+  {
+    id: 'BK-445566',
+    name: "Midnight Black Peak Lapel Tuxedo",
+    price: 3800,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1593030103066-0093718efeb9?w=500&auto=format&fit=crop&q=80",
+    status: "Maintenance"
+  },
+  {
+    id: 'BK-778899',
+    name: "Modern Charcoal Grey Slim Suit",
+    price: 3200,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80",
+    status: "Overdue"
+  }
+];
+
 export default ProductCard;
