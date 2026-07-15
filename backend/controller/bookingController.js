@@ -28,7 +28,7 @@ export async function createBooking(req, res) {
     res.json({
       status: 'success',
       message: 'Booking created successfully',
-      data: data ? data[0] : null,
+      data: data && data.length > 0 ? data[0] : null,
       timestamp: new Date().toISOString()
     });
   } catch (validationError) {
