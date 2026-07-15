@@ -1,4 +1,4 @@
-import transactionModel from '../model/transaction.model.js'; // Fixed relative path
+import transactionModel from '../model/transaction.model.js'; 
 
 export default {
   async getTransactions() {

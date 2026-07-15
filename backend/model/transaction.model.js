@@ -1,49 +1,61 @@
-const transactionsInMemory = [
-  {
-    id: 'TX-1021',
-    item: 'Crimson Ballgown',
-    date: 'May 10, 2026',
-    status: 'Reserved',
-    amount: '₱2,000'
-  },
-  {
-    id: 'TX-1022',
-    item: 'Emerald Evening Gown',
-    date: 'May 12, 2026',
-    status: 'Reserved',
-    amount: '₱3,500'
-  },
-  {
-    id: 'TX-1023',
-    item: 'Sapphire Tuxedo',
-    date: 'May 15, 2026',
-    status: 'Reserved',
-    amount: '₱2,800'
+import { getSupabase } from '../config/supabaseClient.js';
+import { query } from '../config/database.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export async function runMigration() {
+  const sqlPath = join(__dirname, '..', 'migrations', '005_transaction_schema.sql');
+  const sql = readFileSync(sqlPath, 'utf8');
+
+  try {
+    await query(sql);
+    return { error: null };
+  } catch (error) {
+    return { error };
   }
-];
+}
+
+function getClient() {
+  const sb = getSupabase();
+  if (!sb) {
+    return { data: null, error: new Error('Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.') };
+  }
+  return sb;
+}
 
 export default {
+  async runMigration() {
+    return runMigration();
+  },
+
   async find() {
-    return transactionsInMemory;
+    const sb = getClient();
+    if (sb.error) return sb;
+    return sb
+      .from('transactions')
+      .select('*')
+      .order('created_at', { ascending: false });
   },
 
   async create(txData) {
-    // Added backticks around the template literal here
-    const formattedAmount = typeof txData.amount === 'number' 
-      ? `₱${txData.amount.toLocaleString()}` 
-      : txData.amount;
+    const sb = getClient();
+    if (sb.error) return sb;
 
-    // Added backticks around the template literal for the ID generation here
-    const newTransaction = {
+    const formattedTransaction = {
       id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
       item: txData.item || "Standard Rental Item",
       date: txData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: txData.status || 'Reserved',
-      amount: formattedAmount || '₱0'
+      amount: txData.amount || '₱0'
     };
 
-    transactionsInMemory.push(newTransaction);
-    console.log("Successfully saved transaction! Total memory list:", transactionsInMemory);
-    return newTransaction;
+    return sb
+      .from('transactions')
+      .insert([formattedTransaction])
+      .select();
   }
 };
