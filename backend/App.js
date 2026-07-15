@@ -8,6 +8,7 @@ import bookingService from './service/booking.service.js';
 import transactionService from './service/transaction.service.js';
 import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
+import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
 import analyticsModel from './model/analytics.model.js';
 
 // Create Express app
@@ -37,6 +38,8 @@ const bookingRoutes = express.Router();
 const productRoutes = express.Router();
 const loginRoutes = express.Router();
 const transactionRoutes = express.Router();
+const analyticsRouter = express.Router();
+registerAnalyticsRoutes(analyticsRouter);
 
 // ====================
 // Booking Endpoints
@@ -134,6 +137,7 @@ app.use('/api', loginRoutes);
 app.use('/api', transactionRoutes);
 app.use('/api', forecastRouter);
 app.use('/api', aiRouter);
+app.use('/api/analytics', analyticsRouter);
 
 
 const isMainModule = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);

@@ -13,6 +13,19 @@ vi.mock("recharts", async () => {
   };
 });
 
+vi.mock("../../services/analyticsApiClient", () => ({
+  getAnalyticsDashboard: vi.fn(() =>
+    Promise.resolve({
+      summaries: [{ period: "Jan", metric_value: 100 }],
+      forecasts: [
+        { forecast_date: "2026-01-01", actual_value: 10, forecast_value: 12 },
+      ],
+      kpis: [],
+      projections: [{ projected_revenue: 0 }],
+    })
+  ),
+}));
+
 function renderAdminLayout() {
   return render(
     <MemoryRouter>
