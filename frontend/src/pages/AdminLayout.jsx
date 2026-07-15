@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ProtectedRoute from '../components/ProtectedRoute';
 import Sidebar from '../components/Sidebar';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
+import LiveAdminDashboard from '../components/LiveAdminDashboard';
 import AIBusinessInsights from '../components/AIBusinessInsights';
 
 // Combined Sprint Component Imports
@@ -29,7 +29,7 @@ const AdminContent = () => {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="lg:col-span-2">
-              <AnalyticsDashboard />
+              <LiveAdminDashboard />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-700 mb-4">AI Business Insights</h2>
