@@ -29,10 +29,11 @@ describe("RenTech Week 2 Day 2 - Transaction Monitoring Test Suite", () => {
   });
 
   describe("Transaction Summary Query Engine", () => {
-    it("should calculate correct total numerical metrics for the entire system", async () => {
+    it("should calculate correct total numerical metrics from the database ledger", async () => {
       const summary = await getTransactionSummary();
-      expect(summary.totalTransactions).toBe(3);
-      expect(summary.totalRevenue).toBe(320); 
+      expect(summary.totalTransactions).toBe(5);
+      expect(summary.totalRevenue).toBe(7200);
+      expect(summary.statusCounts).toEqual({ Active: 4, Returned: 1 });
     });
   });
 
@@ -40,10 +41,10 @@ describe("RenTech Week 2 Day 2 - Transaction Monitoring Test Suite", () => {
   describe("Rental History Backend Search - Functional Logic", () => {
 
     it("should filter rental records accurately by status", async () => {
-      const records = await getRentalHistory({ status: "Completed" });
+      const records = await getRentalHistory({ status: "Returned" });
       expect(records.length).toBeGreaterThan(0);
       records.forEach(record => {
-        expect(record.status.toLowerCase()).toBe("completed");
+        expect(record.status.toLowerCase()).toBe("returned");
       });
     });
 

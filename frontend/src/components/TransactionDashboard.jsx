@@ -15,7 +15,7 @@ export default function TransactionDashboard() {
     { id: "TX-1001", username: "ana rivera", itemName: "Vintage Gatsby Sequin Dress", date: "May 01, 2026", pricePerDay: 500, daysRented: 3, totalCost: 1500, status: "Active" },
     { id: "TX-1002", username: "carlos mendez", itemName: "Barong Tagalog", date: "May 02, 2026", pricePerDay: 400, daysRented: 2, totalCost: 800, status: "Active" },
     { id: "TX-1003", username: "liza santos", itemName: "Emerald Velvet Gown", date: "May 03, 2026", pricePerDay: 600, daysRented: 3, totalCost: 1800, status: "Active" },
-    { id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "May 04, 2026", pricePerDay: 700, daysRented: 2, totalCost: 1400, status: "Completed" },
+    { id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "May 04, 2026", pricePerDay: 700, daysRented: 2, totalCost: 1400, status: "Returned" },
     { id: "TX-1005", username: "isabel garcia", itemName: "Champagne Silk Gown", date: "May 02, 2026", pricePerDay: 850, daysRented: 2, totalCost: 1700, status: "Active" }
   ]);
 
@@ -34,13 +34,13 @@ export default function TransactionDashboard() {
     for (let i = 0; i < transactions.length; i++) {
       const currentItem = transactions[i];
       if (currentItem.id === idToUpdate) {
-        updatedArray.push({ ...currentItem, status: "Completed" });
+        updatedArray.push({ ...currentItem, status: "Returned" });
       } else {
         updatedArray.push(currentItem);
       }
     }
     setTransactions(updatedArray);
-    alert("Item status updated to Completed!");
+    alert("Item status updated to Returned!");
   }
 
   function handleCheckboxChange(statusKey) {
@@ -71,7 +71,7 @@ export default function TransactionDashboard() {
       matchesStatus = false;
       if (selectedStatuses.Active && item.status === "Active") matchesStatus = true;
       if (selectedStatuses.Reserved && item.status === "Reserved") matchesStatus = true;
-      if (selectedStatuses.Returned && item.status === "Completed") matchesStatus = true;
+      if (selectedStatuses.Returned && item.status === "Returned") matchesStatus = true;
     }
 
     if (matchesSearch && matchesStatus) {
@@ -88,6 +88,16 @@ export default function TransactionDashboard() {
       let actionElement = null;
       if (userRole === "Customer") {
         actionElement = <span style={{ color: '#cbd5e1', fontSize: '13px' }}>None</span>;
+      } else if (item.status === "Returned") {
+        actionElement = (
+          <button 
+            disabled
+            style={{ border: 'none', backgroundColor: '#f1f5f9', color: '#cbd5e1', width: '32px', height: '32px', borderRadius: '50%', cursor: 'not-allowed', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Already returned"
+          >
+            ↩
+          </button>
+        );
       } else {
         actionElement = (
           <button 
@@ -102,9 +112,9 @@ export default function TransactionDashboard() {
 
       let statusBgColor = '#ecfdf5';
       let statusTextColor = '#059669';
-      if (item.status === 'Completed') {
-        statusBgColor = '#f0fdf4';
-        statusTextColor = '#16a34a';
+      if (item.status === 'Returned') {
+        statusBgColor = '#ede9fe';
+        statusTextColor = '#7c3aed';
       } else if (item.status === 'Reserved') {
         statusBgColor = '#fef3c7';
         statusTextColor = '#d97706';
@@ -132,23 +142,9 @@ export default function TransactionDashboard() {
 
   return (
     /* Top Main Layout Frame Layer restricting frame height view */
-    <div style={{ display: 'flex', flexDirection: 'col', flexDirection: 'column', maxHeight: '85vh', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', overflow: 'hidden', fontFamily: 'sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'sans-serif' }}>
       
-      {/* 1. STICKY HEADER ROW CONTAINER */}
-      <div style={{ position: 'sticky', top: '0', zIndex: 50, backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 40px', borderBottom: '1px solid #f1f5f9' }}>
-        <p style={{ color: 'black', fontSize: '14px', margin: '0' }}><strong>Admin Portal</strong></p>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <button style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #e2e8f0', backgroundColor: '#fff', cursor: 'pointer', fontSize: '14px' }}>
-            + Add Item
-          </button>
-          <button style={{ width: '35px', height: '35px', borderRadius: '50%', border: '1px solid #e2e8f0', backgroundColor: '#fff', cursor: 'pointer', position: 'relative' }}>
-            🔔
-            <span style={{ position: 'absolute', top: '2px', right: '2px', width: '8px', height: '8px', backgroundColor: 'red', borderRadius: '50%' }}></span>
-          </button>
-        </div>
-      </div>
-      
-      {/* 2. INDEPENDENTLY SCROLLABLE DATA DASHBOARD BODY */}
+      {/* INDEPENDENTLY SCROLLABLE DATA DASHBOARD BODY */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px 40px 40px' }}>
         <h1 style={{ margin: '0 0 5px 0', fontSize: '32px', color: '#0f172a', fontWeight: 'bold' }}>Records</h1>
         <p style={{ color: 'gray', margin: '0 0 30px 0', fontSize: '16px' }}>Digital logbook of all rental transactions.</p>

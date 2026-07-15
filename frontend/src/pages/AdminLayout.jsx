@@ -6,7 +6,8 @@ import AIBusinessInsights from '../components/AIBusinessInsights';
 
 // Combined Sprint Component Imports
 import TransactionDashboard from '../components/TransactionDashboard';
-import AccountSettings from '../components/SystemSetting'; // Make sure this matches your file name (e.g., './Component' or './SystemSetting')
+import AccountSettings from '../components/SystemSetting';
+import StaffManagement from '../components/StaffManagement';
 
 const mockInsights = [
   "Rental demand for winter coats is up 20% this week.",
@@ -19,10 +20,20 @@ const mockSuggestions = [
 ];
 
 const AdminContent = () => {
-  // Navigation active tab tracking state variable (matches lowercase sidebar IDs)
   const [currentTab, onTabChange] = useState('dashboard');
+  const [existingStaff, setExistingStaff] = useState([
+    { username: "staff1", password: "••••••" },
+    { username: "staff2", password: "••••••" }
+  ]);
 
-  // Conditionally decides what to render based on the currently selected menu key
+  const handleAddStaff = (newStaff) => {
+    setExistingStaff(prev => [...prev, { ...newStaff, password: "••••••" }]);
+  };
+
+  const handleDeleteStaff = (username) => {
+    setExistingStaff(prev => prev.filter(staff => staff.username !== username));
+  };
+
   const renderViewContent = () => {
     switch (currentTab) {
       case 'dashboard':
@@ -49,11 +60,25 @@ const AdminContent = () => {
             <AccountSettings />
           </div>
         );
+      case 'staff':
+        return (
+          <div className="w-full max-w-4xl mx-auto py-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Staff Management</h2>
+              <p className="text-gray-500 text-sm mt-1">Manage staff accounts and access permissions.</p>
+            </div>
+            <StaffManagement 
+              onAddRole={handleAddStaff}
+              onDeleteRole={handleDeleteStaff}
+              existingRoles={existingStaff}
+            />
+          </div>
+        );
       default:
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="lg:col-span-2">
-              <AnalyticsDashboard />
+              <LiveAdminDashboard />
             </div>
           </div>
         );
@@ -62,7 +87,6 @@ const AdminContent = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar navigation receiving standard sync hooks */}
       <div className="w-64 shrink-0 border-r border-gray-200">
         <Sidebar currentTab={currentTab} onTabChange={onTabChange} />
       </div>
