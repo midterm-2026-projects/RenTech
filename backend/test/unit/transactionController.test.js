@@ -4,7 +4,7 @@ import express from 'express';
 import { registerTransactionRoutes } from '../../route/transactionRoute.js';
 import transactionService from '../../service/transaction.service.js';
 
-
+// Mock the service layer
 vi.mock('../../service/transaction.service.js', () => ({
   default: {
     getTransactions: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock('../../service/transaction.service.js', () => ({
   },
 }));
 
-
+// Setup a minimal Express app for Supertest
 const app = express();
 app.use(express.json());
 const router = express.Router();
@@ -36,6 +36,20 @@ describe('Transaction Controller (Supertest)', () => {
         status: 'success',
         message: 'Transactions retrieved successfully',
         data: payload
+      });
+    });
+
+    // Test case for handling empty transaction database state
+    it('should return 200 and empty data when there are no transactions', async () => {
+      transactionService.getTransactions.mockResolvedValue([]);
+
+      const response = await request(app).get('/transactions');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        status: 'success',
+        message: 'Transactions retrieved successfully',
+        data: []
       });
     });
   });
