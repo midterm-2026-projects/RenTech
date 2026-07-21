@@ -1,82 +1,90 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getInsights, postAssistant } from '../../service/aiService.js';
+
+vi.mock('../../service/geminiService.js', () => ({
+  chatWithAi: vi.fn().mockResolvedValue({ reply: 'AI generated response', source: 'ai' }),
+  generateReport: vi.fn().mockResolvedValue({ report: 'AI generated insight', source: 'ai' }),
+}));
 
 describe('AI Service', () => {
   describe('getInsights', () => {
-    it('returns success status and operational message', () => {
-      const result = getInsights();
+    it('returns success status with insights array', async () => {
+      const result = await getInsights({ revenue: 1000 });
 
       expect(result).toMatchObject({
         status: 'success',
-        message: expect.stringMatching(/operational/),
+        insights: expect.any(Array),
       });
       expect(result).toHaveProperty('timestamp');
-      expect(typeof result.timestamp).toBe('string');
+      expect(result).toHaveProperty('prompt');
     });
 
-    it('returns a fresh timestamp', () => {
+    it('returns a fresh timestamp', async () => {
       const before = Date.now();
-      const result = getInsights();
+      const result = await getInsights({});
       const after = Date.now();
       const ts = new Date(result.timestamp).getTime();
       expect(ts).toBeGreaterThanOrEqual(before);
       expect(ts).toBeLessThanOrEqual(after);
     });
 
-    it('always returns the same shape', () => {
-      const result = getInsights();
-      expect(Object.keys(result).sort()).toEqual(['message', 'status', 'timestamp']);
+    it('handles empty KPIs object', async () => {
+      const result = await getInsights({});
+      expect(result.status).toBe('success');
+      expect(result.insights).toBeDefined();
+    });
+
+    it('handles KPIs with zero values', async () => {
+      const result = await getInsights({ revenue: 0, rentals: 0 });
+      expect(result.status).toBe('success');
+    });
+
+    it('handles KPIs with missing values', async () => {
+      const result = await getInsights({ revenue: undefined, rentals: null });
+      expect(result.status).toBe('success');
     });
   });
 
   describe('postAssistant', () => {
-    it('returns placeholder answer containing the question', () => {
-      const result = postAssistant('What is the revenue trend?');
+    it('returns success status with answer', async () => {
+      const result = await postAssistant('What is the revenue trend?');
 
       expect(result).toMatchObject({
         status: 'success',
-        answer: expect.stringContaining('What is the revenue trend?'),
+        answer: expect.any(String),
       });
       expect(result).toHaveProperty('timestamp');
-      expect(typeof result.timestamp).toBe('string');
     });
 
-    it('handles empty question string', () => {
-      const result = postAssistant('');
-
-      expect(result).toMatchObject({
-        status: 'success',
-        answer: expect.stringContaining(''),
-      });
+    it('handles empty question string', async () => {
+      const result = await postAssistant('');
+      expect(result.status).toBe('success');
     });
 
-    it('handles question with special characters', () => {
-      const result = postAssistant('test!@#$%');
-
-      expect(result.answer).toContain('test!@#$%');
+    it('handles question with special characters', async () => {
+      const result = await postAssistant('test!@#$%');
+      expect(result.status).toBe('success');
     });
 
-    it('handles question with numbers', () => {
-      const result = postAssistant('Revenue was 12345.67');
-
-      expect(result.answer).toContain('12345.67');
+    it('handles question with numbers', async () => {
+      const result = await postAssistant('Revenue was 12345.67');
+      expect(result.status).toBe('success');
     });
 
-    it('handles very long questions', () => {
-      const long = 'a'.repeat(10000);
-      const result = postAssistant(long);
-      expect(result.answer).toContain(long);
+    it('handles very long questions', async () => {
+      const long = 'a'.repeat(1000);
+      const result = await postAssistant(long);
+      expect(result.status).toBe('success');
     });
 
-    it('handles unicode characters', () => {
-      const result = postAssistant('¿Cómo estás? 你好');
-
-      expect(result.answer).toContain('¿Cómo estás? 你好');
+    it('handles unicode characters', async () => {
+      const result = await postAssistant('¿Cómo estás? 你好');
+      expect(result.status).toBe('success');
     });
 
-    it('always returns the same shape', () => {
-      const result = postAssistant('test');
-      expect(Object.keys(result).sort()).toEqual(['answer', 'status', 'timestamp']);
+    it('accepts context parameter', async () => {
+      const result = await postAssistant('test', { revenue: 1000 });
+      expect(result.status).toBe('success');
     });
   });
 });

@@ -1,15 +1,22 @@
-export function getInsights() {
+import { chatWithAi, generateReport } from './geminiService.js';
+
+export async function getInsights(kpis = {}) {
+  const result = await generateReport({ kpis });
+
   return {
     status: 'success',
-    message: 'AI insights endpoint is operational',
+    insights: [result.report],
+    prompt: JSON.stringify(kpis),
     timestamp: new Date().toISOString(),
   };
 }
 
-export function postAssistant(question) {
+export async function postAssistant(question, context = {}) {
+  const result = await chatWithAi(question);
+
   return {
     status: 'success',
-    answer: `Placeholder: Your question "${question}" has been received. AI assistant integration is in progress.`,
+    answer: result.reply,
     timestamp: new Date().toISOString(),
   };
 }
