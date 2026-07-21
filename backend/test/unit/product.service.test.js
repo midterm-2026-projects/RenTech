@@ -3,7 +3,7 @@ import productService from '../../service/product.service.js';
 import productModel from '../../model/product.model.js';
 
 vi.mock('../../model/product.model.js', () => ({
-  default: { findAll: vi.fn() },
+  default: { findAll: vi.fn(), softDelete: vi.fn() },
 }));
 
 describe('Product Service', () => {
@@ -33,6 +33,16 @@ describe('Product Service', () => {
     const result = await productService.getProducts();
 
     expect(productModel.findAll).toHaveBeenCalledWith({});
+    expect(result).toBe(mockResult);
+  });
+
+  it('delegates softDeleteProduct to the product model with the id', async () => {
+    const mockResult = { data: { id: 1 }, error: null };
+    productModel.softDelete.mockResolvedValue(mockResult);
+
+    const result = await productService.softDeleteProduct(1);
+
+    expect(productModel.softDelete).toHaveBeenCalledWith(1);
     expect(result).toBe(mockResult);
   });
 });

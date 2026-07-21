@@ -1,12 +1,9 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
-  Boxes, CheckCircle2, AlertTriangle, PackageX, Gauge, Tag
+  Boxes, CheckCircle2, AlertTriangle, PackageX, Trash2, Search
 } from 'lucide-react';
-import {
-  calculateOptimizationScore,
-  generatePromotionRecommendations,
-} from '../services/inventoryOptimizationService';
-import { getProducts } from '../services/inventoryApiClient';
+import { getProducts, softDeleteProduct } from '../services/inventoryApiClient';
+import SmartInventoryOptimization from './SmartInventoryOptimization';
 
 const STATUS_STYLES = {
   Available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -25,12 +22,20 @@ const InventoryManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadPage = useCallback(async (nextPage) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getProducts({ page: nextPage, limit: PAGE_SIZE });
+      const res = await getProducts({
+        page: nextPage,
+        limit: PAGE_SIZE,
+        search,
+        status: statusFilter,
+      });
       setProducts(res.data || []);
       setTotal(res.total || 0);
       setTotalPages(res.totalPages || 1);
@@ -41,12 +46,40 @@ const InventoryManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [search, statusFilter]);
 
+  // Initial load (no debounce) so the first paint is prompt and deterministic.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage(1);
-  }, [loadPage]);
+  }, []);
+
+  // Re-fetch (resetting to page 1) when the user changes the search or status
+  // filter, debounced so we don't hit the API on every keystroke.
+  useEffect(() => {
+    if (search === '' && statusFilter === '') return;
+    const timer = setTimeout(() => loadPage(1), 300);
+    return () => clearTimeout(timer);
+  }, [search, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDelete = useCallback(async (id) => {
+    const target = products.find((p) => p.id === id);
+    const label = target ? `"${target.name}"` : 'this item';
+    if (!window.confirm(`Delete ${label}? It will be hidden from inventory but rental history is kept.`)) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      await softDeleteProduct(id);
+      await loadPage(page);
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Failed to delete item');
+    } finally {
+      setDeletingId(null);
+    }
+  }, [products, page, loadPage]);
+
+  const statusOptions = ['Available', 'Rented', 'Maintenance', 'Overdue'];
 
   const derived = useMemo(() => {
     const countByStatus = products.reduce((acc, p) => {
@@ -85,22 +118,10 @@ const InventoryManagement = () => {
       inventoryTurnover,
     };
 
-    return {
-      countByStatus,
-      metrics,
-      optimizationScore: calculateOptimizationScore(metrics),
-      promotions: generatePromotionRecommendations(notRentedItems),
-    };
+    return { countByStatus, metrics };
   }, [products]);
 
-  const { countByStatus, metrics, optimizationScore, promotions } = derived;
-
-  const scoreColor =
-    optimizationScore >= 75
-      ? 'text-emerald-600'
-      : optimizationScore >= 50
-      ? 'text-amber-600'
-      : 'text-rose-600';
+  const { countByStatus, metrics } = derived;
 
   const stats = [
     { label: 'Total Items', value: total, Icon: Boxes, tone: 'text-slate-600 bg-slate-100' },
@@ -124,14 +145,40 @@ const InventoryManagement = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
         {/* Stock table */}
-        <div className="lg:col-span-2 p-6 rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-bold text-gray-800">Stock Levels</h2>
               <p className="text-xs text-gray-400 mt-0.5 mb-4">Current inventory by item and status</p>
             </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search items…"
+                  aria-label="Search inventory"
+                  className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 w-44"
+                />
+              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                aria-label="Filter by status"
+                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              >
+                <option value="">All statuses</option>
+                {statusOptions.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs text-gray-400">
               {total} item{total === 1 ? '' : 's'} · Page {page} of {totalPages}
             </span>
@@ -152,6 +199,7 @@ const InventoryManagement = () => {
                     <th className="py-2 pr-4 font-medium">Category</th>
                     <th className="py-2 pr-4 font-medium">Price</th>
                     <th className="py-2 font-medium">Status</th>
+                    <th className="py-2 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,11 +213,23 @@ const InventoryManagement = () => {
                           {p.status}
                         </span>
                       </td>
+                      <td className="py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          aria-label={`Delete ${p.name}`}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          {deletingId === p.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {products.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="py-6 text-center text-gray-400">No inventory data available.</td>
+                      <td colSpan={5} className="py-6 text-center text-gray-400">No inventory data available.</td>
                     </tr>
                   )}
                 </tbody>
@@ -216,58 +276,10 @@ const InventoryManagement = () => {
           )}
         </div>
 
-        {/* Optimization score */}
-        <div className="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm flex flex-col">
-          <div className="flex items-center space-x-2 mb-2">
-            <Gauge className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-lg font-bold text-gray-800">Optimization Score</h2>
-          </div>
-          <div className="flex-1 flex flex-col items-center justify-center py-4">
-            <div className="relative w-36 h-36">
-              <svg className="w-36 h-36 -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#e2e8f0" strokeWidth="3.5" />
-                <circle
-                  cx="18" cy="18" r="15.5" fill="none"
-                  stroke={optimizationScore >= 75 ? '#059669' : optimizationScore >= 50 ? '#d97706' : '#e11d48'}
-                  strokeWidth="3.5" strokeLinecap="round"
-                  strokeDasharray={`${(optimizationScore / 100) * 97.4} 97.4`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-3xl font-bold ${scoreColor}`}>{optimizationScore}</span>
-                <span className="text-xs text-gray-400">/ 100</span>
-              </div>
-            </div>
-            <p className="mt-3 text-xs text-center text-gray-500">
-              AI-adjusted health of your rental inventory
-            </p>
-          </div>
-          <dl className="mt-4 space-y-1 text-sm border-t border-gray-100 pt-3">
-            <div className="flex justify-between"><dt className="text-gray-400">Active Revenue</dt><dd className="font-medium text-gray-700">₱{metrics.totalSales.toLocaleString()}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-400">Top Performer</dt><dd className="font-medium text-gray-700 truncate max-w-[140px]" title={metrics.topSellingItem}>{metrics.topSellingItem}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-400">Turnover</dt><dd className="font-medium text-gray-700">{metrics.inventoryTurnover}%</dd></div>
-          </dl>
-        </div>
       </div>
 
-      {/* Promotion engine */}
-      <div className="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex items-center space-x-2 mb-3">
-          <Tag className="w-5 h-5 text-indigo-500" />
-          <h2 className="text-lg font-bold text-gray-800">AI Promotion Recommendations</h2>
-        </div>
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {promotions.map((rec, idx) => (
-            <li
-              key={idx}
-              className="flex items-start space-x-2 p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 text-sm text-gray-700"
-            >
-              <span className="mt-0.5 text-indigo-400">★</span>
-              <span>{rec}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Smart Inventory & Rental Optimization (Objective 3.3) */}
+      <SmartInventoryOptimization metrics={metrics} />
     </div>
   );
 };

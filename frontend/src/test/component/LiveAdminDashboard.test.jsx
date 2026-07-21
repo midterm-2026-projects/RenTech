@@ -43,7 +43,7 @@ describe('LiveAdminDashboard', () => {
     );
   });
 
-  it('renders the dashboard once data loads', async () => {
+  it('renders the dashboard charts once data loads', async () => {
     getAnalyticsDashboard.mockResolvedValue({
       summaries: [{ period: 'Jan', metric_value: 10, metric_name: 'revenue' }],
       forecasts: [],
@@ -52,7 +52,7 @@ describe('LiveAdminDashboard', () => {
     });
     render(<LiveAdminDashboard />);
     await waitFor(() =>
-      expect(screen.getByText('Revenue Trends')).toBeInTheDocument()
+      expect(screen.getByText('Revenue Trajectory')).toBeInTheDocument()
     );
   });
 
@@ -73,7 +73,7 @@ describe('LiveAdminDashboard', () => {
     await userEvent.click(retry);
 
     await waitFor(() =>
-      expect(screen.getByText('Revenue Trends')).toBeInTheDocument()
+      expect(screen.getByText('Revenue Trajectory')).toBeInTheDocument()
     );
   });
 });

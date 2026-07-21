@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X } from "lucide-react";
+import { clearSession } from "./Login";
 
 export default function Sidebar({ currentTab, onTabChange }) {
+  const navigate = useNavigate();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const getButtonStyles = (tabName) => {
@@ -20,7 +23,8 @@ export default function Sidebar({ currentTab, onTabChange }) {
 
   const handleConfirmSignOut = () => {
     setShowSignOutModal(false);
-    alert("Signing out..."); 
+    clearSession();
+    navigate("/", { replace: true });
   };
 
   return (

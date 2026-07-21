@@ -30,4 +30,19 @@ export const getProducts = async (req, res) => {
   }
 };
 
-export default { getProducts };
+export const softDeleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await productService.softDeleteProduct(id);
+
+    if (error) {
+      return res.status(500).json({ status: 'error', message: error.message });
+    }
+
+    res.json({ status: 'success', message: 'Product deleted' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export default { getProducts, softDeleteProduct };

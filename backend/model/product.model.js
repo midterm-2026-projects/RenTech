@@ -41,4 +41,22 @@ export async function findAll({ page = 1, limit = 8, search = '', status = '' } 
   };
 }
 
-export default { findAll };
+// Soft delete: flag the base inventory row as deleted. The `products` view
+// hides flagged rows, so they disappear from listings without losing history.
+// Returns { data, error }.
+export async function softDelete(id) {
+  const sb = getClient();
+  if (sb.error) return { data: null, error: sb.error };
+
+  const { data, error } = await sb
+    .from('inventory_items')
+    .update({ is_deleted: true })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return { data: null, error };
+  return { data, error: null };
+}
+
+export default { findAll, softDelete };

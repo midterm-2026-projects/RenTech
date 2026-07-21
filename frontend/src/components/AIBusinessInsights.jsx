@@ -1,13 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
-import { jsPDF } from 'jspdf';
-import { Sparkles, Lightbulb, FileDown, RefreshCw } from 'lucide-react';
+import { Sparkles, Lightbulb, RefreshCw } from 'lucide-react';
 import api from '../services/analyticsApiClient';
-import { generateReport } from '../services/aiInsightsService';
+import { generateReport, buildFallbackInsights } from '../services/aiInsightsService';
 
-const AIBusinessInsights = ({ insights = [], onReportGenerated }) => {
+// Matches the backend's error/configuration failure messages so we can fall
+// back to locally-generated insights instead of surfacing the raw message.
+const isErrorReport = (text = '') =>
+  /unable to generate|not configured|could not generate|no report generated/i.test(text);
+
+// Splits a long AI report (or any multi-line insight) into discrete,
+// scannable bullets so the panel renders cleanly instead of one giant block.
+const toBullets = (insights = []) =>
+  insights.flatMap((item) => {
+    if (typeof item !== 'string') return [item];
+    return item
+      .split(/\n{2,}/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  });
+
+const AIBusinessInsights = ({ insights = [] }) => {
   const [internalInsights, setInternalInsights] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [reportLoading, setReportLoading] = useState(false);
 
   const loadAnalyticsPayload = useCallback(async () => {
     const kpisRes = await api.get('/api/analytics/kpis');
@@ -42,8 +56,30 @@ const AIBusinessInsights = ({ insights = [], onReportGenerated }) => {
       const payload = await loadAnalyticsPayload();
       const result = await generateReport(payload);
 
-      if (result.insights) {
-        setInternalInsights(Array.isArray(result.insights) ? result.insights : [result.insights]);
+      const rawInsights = Array.isArray(result.insights)
+        ? result.insights
+        : result.insights
+          ? [result.insights]
+          : [];
+
+      const errorLike =
+        rawInsights.some((t) => isErrorReport(t)) ||
+        isErrorReport(result.report || '');
+
+      if (rawInsights.length && !errorLike) {
+        setInternalInsights(rawInsights);
+      } else if (errorLike) {
+        // Generative AI failed/unavailable — fall back to locally built,
+        // properly formatted insights instead of surfacing the raw error.
+        setInternalInsights(
+          buildFallbackInsights({
+            kpis: payload.kpis,
+            revenue: payload.revenue,
+            forecast: payload.forecast,
+          })
+        );
+      } else {
+        setInternalInsights([]);
       }
     } catch {
       setInternalInsights([]);
@@ -54,73 +90,15 @@ const AIBusinessInsights = ({ insights = [], onReportGenerated }) => {
 
   useEffect(() => {
     if ((insights || []).length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAiData();
     }
     // Depend on length (not array identity) so the default `[]` prop doesn't
     // trigger a refetch on every render.
   }, [insights?.length, fetchAiData]);
 
-  const displayInsights = (insights || []).length > 0 ? insights : internalInsights;
+  const displayInsights = toBullets((insights || []).length > 0 ? insights : internalInsights);
   const hasData = displayInsights.length > 0;
-
-  const handleGenerateReport = async () => {
-    setReportLoading(true);
-    try {
-      const payload = await loadAnalyticsPayload();
-      const result = await generateReport(payload);
-      const reportText = result.insights?.[0] || result.report || 'No report generated';
-
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      let y = 20;
-
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RenTech Analytics Report', pageWidth / 2, y, { align: 'center' });
-      y += 15;
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Generated: ${new Date().toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
-      y += 10;
-
-      const addSection = (title, content) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(title, 15, y);
-        y += 8;
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'normal');
-
-        const lines = doc.splitTextToSize(content, 180);
-        doc.text(lines, 15, y);
-        y += lines.length * 6 + 5;
-      };
-
-      const sections = reportText.split('\n\n').filter(s => s.trim());
-      sections.forEach((section, i) => {
-        const lines = section.split('\n');
-        const header = lines[0];
-        const content = lines.slice(1).join('\n') || lines[0];
-        if (header && header.length < 50 && !header.includes('.')) {
-          addSection(header, content);
-        } else {
-          addSection(`Section ${i + 1}`, section);
-        }
-      });
-
-      doc.save('rentech-analytics-report.pdf');
-
-      if (onReportGenerated) {
-        onReportGenerated();
-      }
-    } catch {
-      alert('Failed to generate report. Please try again.');
-    } finally {
-      setReportLoading(false);
-    }
-  };
 
   if (!hasData && loading) {
     return (
@@ -149,24 +127,14 @@ const AIBusinessInsights = ({ insights = [], onReportGenerated }) => {
 
   return (
     <div className="ai-insights-container bg-white border border-indigo-100 rounded-2xl shadow-sm p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-2">
-          <span className="p-2 rounded-lg bg-indigo-50 text-indigo-500">
-            <Sparkles className="w-5 h-5" />
-          </span>
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">AI Business Insights</h2>
-            <p className="text-xs text-gray-400">Generated from live analytics data</p>
-          </div>
+      <div className="flex items-center space-x-2">
+        <span className="p-2 rounded-lg bg-indigo-50 text-indigo-500">
+          <Sparkles className="w-5 h-5" />
+        </span>
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">AI Business Insights</h2>
+          <p className="text-xs text-gray-400">Generated from live analytics data</p>
         </div>
-        <button
-          onClick={handleGenerateReport}
-          disabled={reportLoading}
-          className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
-        >
-          <FileDown className="w-4 h-4" />
-          <span>{reportLoading ? 'Generating...' : 'Generate AI Report'}</span>
-        </button>
       </div>
 
       <section>

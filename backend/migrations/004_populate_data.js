@@ -77,8 +77,8 @@ async function populateTestData() {
     INVENTORY.forEach((it, i) => { idByName[it.name] = invIds[i]; });
     await batchInsert(
       'inventory_items',
-      ['id', 'name', 'category'],
-      INVENTORY.map((it, i) => [invIds[i], it.name, it.category])
+      ['id', 'name', 'category', 'price', 'image', 'status'],
+      INVENTORY.map((it, i) => [invIds[i], it.name, it.category, it.price, it.image ?? null, it.status ?? 'Available'])
     );
 
     const rng = makeRng(20260621);

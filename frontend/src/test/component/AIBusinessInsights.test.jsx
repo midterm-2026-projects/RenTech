@@ -14,7 +14,7 @@ describe('AIBusinessInsights Component', () => {
   it('renders a fallback UI when data is completely empty or null', async () => {
     render(<AIBusinessInsights insights={null} suggestions={null} />);
     await waitFor(() =>
-      expect(screen.getByText(/No AI business insights available at this time/i)).toBeInTheDocument()
+      expect(screen.getByText(/No AI business insights available/i)).toBeInTheDocument()
     );
   });
 
@@ -65,7 +65,7 @@ describe('AIBusinessInsights Component', () => {
     render(<AIBusinessInsights insights={null} suggestions={['Bundle items for discount.']} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/No AI business insights available at this time/i)).toBeInTheDocument();
+      expect(screen.getByText(/No AI business insights available/i)).toBeInTheDocument();
     });
     expect(screen.queryByTestId('insights-list')).not.toBeInTheDocument();
   });

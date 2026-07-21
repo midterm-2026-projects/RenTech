@@ -8,15 +8,20 @@ describe('Product Route', () => {
     const router = express.Router();
     registerProductRoutes(router);
 
-    // The router should expose exactly one layer with a route.
+    // The router should expose exactly the expected routes.
     const routeLayers = router.stack.filter((layer) => layer.route);
-    expect(routeLayers).toHaveLength(1);
+    expect(routeLayers).toHaveLength(2);
 
-    const route = routeLayers[0].route;
-    expect(route.path).toBe('/products');
-    expect(route.methods.get).toBe(true);
-    expect(route.methods.post).toBeFalsy();
-    expect(route.stack[0].handle).toBe(productController.getProducts);
+    const getRoute = routeLayers.find((l) => l.route.path === '/products');
+    expect(getRoute).toBeDefined();
+    expect(getRoute.route.methods.get).toBe(true);
+    expect(getRoute.route.methods.patch).toBeFalsy();
+    expect(getRoute.route.stack[0].handle).toBe(productController.getProducts);
+
+    const patchRoute = routeLayers.find((l) => l.route.path === '/products/:id/soft-delete');
+    expect(patchRoute).toBeDefined();
+    expect(patchRoute.route.methods.patch).toBe(true);
+    expect(patchRoute.route.stack[0].handle).toBe(productController.softDeleteProduct);
   });
 
   it('delegates incoming GET /products requests to productController.getProducts', async () => {

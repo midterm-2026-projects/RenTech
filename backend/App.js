@@ -10,6 +10,8 @@ import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
 import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
 import { registerProductRoutes } from './route/productRoute.js';
+import { registerHealthRoutes } from './route/healthRoute.js';
+import { requestLogger, errorLogger } from './middleware/requestLogger.js';
 import analyticsModel from './model/analytics.model.js';
 import { register, login } from './controller/loginController.js';
 import { getRentalHistory, getTransactionSummary, calculateTransactionCosts } from './service/transactionMonitoring.service.js';
@@ -23,6 +25,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 // ====================
 // Forecast Routes
@@ -276,18 +279,15 @@ app.post('/api/migrations/run', async (req, res) => {
 });
 
 // ====================
-// Health Check
+// Health Check & Monitoring
 // ====================
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
-});
+const healthRouter = express.Router();
+registerHealthRoutes(healthRouter);
 
 // ====================
 // Register Routes
 // ====================
+app.use('/api', healthRouter);
 app.use('/api', bookingRoutes);
 app.use('/api', productRoutes);
 app.use('/api', loginRoutes);
@@ -298,6 +298,11 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/auth', loginRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', staffRoutes);
+
+// ====================
+// Global Error Handler (logging)
+// ====================
+app.use(errorLogger);
 
 const isMainModule = process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1]);
 if (isMainModule) {

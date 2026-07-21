@@ -13,6 +13,16 @@ vi.mock("recharts", async () => {
   };
 });
 
+vi.mock("../../services/inventoryApiClient", () => ({
+  getProducts: vi.fn(() =>
+    Promise.resolve({ data: [], total: 0, totalPages: 1, page: 1, limit: 8 })
+  ),
+  getTransactions: vi.fn(() =>
+    Promise.resolve({ data: [], total: 0, totalPages: 1, page: 1, limit: 10 })
+  ),
+  softDeleteProduct: vi.fn(() => Promise.resolve({ status: "success" })),
+}));
+
 vi.mock("../../services/analyticsApiClient", () => ({
   getAnalyticsDashboard: vi.fn(() =>
     Promise.resolve({
@@ -57,23 +67,24 @@ describe("AdminLayout Component (Integration)", () => {
     });
   });
 
-  it("embeds the Analytics Dashboard component for admin users", async () => {
+  it("embeds the Dashboard charts for admin users", async () => {
     LoginModule.saveSession("Admin", "admin");
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
-      expect(screen.getByText("Demand Forecasting (SMA)")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
   });
 
-  it("embeds the AI Business Insights component with data", async () => {
+  it("does NOT embed the AI Business Insights panel on the dashboard (now lives in AI Intelligence)", async () => {
     LoginModule.saveSession("Admin", "admin");
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("AI Business Insights")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
+
+    expect(screen.queryByText("AI Business Insights")).not.toBeInTheDocument();
   });
 
   it("renders the Sidebar component for admin users", async () => {
@@ -102,7 +113,7 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
-      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+      expect(screen.queryByText("Revenue Trajectory")).not.toBeInTheDocument();
     });
   });
 
@@ -112,7 +123,7 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
-      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+      expect(screen.queryByText("Revenue Trajectory")).not.toBeInTheDocument();
     });
   });
 
@@ -121,7 +132,7 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.queryByText(/Admin Portal/i)).not.toBeInTheDocument();
-      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+      expect(screen.queryByText("Revenue Trajectory")).not.toBeInTheDocument();
     });
   });
 
@@ -165,7 +176,7 @@ describe("AdminLayout Component (Integration)", () => {
 
     // 1. Wait for dashboard view to settle
     await waitFor(() => {
-      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
 
     // 2. Locate and click the Transactions tab inside the sidebar
@@ -185,7 +196,7 @@ describe("AdminLayout Component (Integration)", () => {
 
     // 1. Wait for dashboard view to settle
     await waitFor(() => {
-      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
 
     // 2. Locate and click the System Settings tab inside the sidebar
@@ -205,7 +216,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
 
     const inventoryBtn = screen.getByRole("button", { name: /inventory/i });
@@ -215,7 +226,7 @@ describe("AdminLayout Component (Integration)", () => {
       expect(screen.getByText("Stock Levels")).toBeInTheDocument();
       expect(screen.getByText("Optimization Score")).toBeInTheDocument();
       // Inventory must NOT render the dashboard graphs
-      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+      expect(screen.queryByText("Revenue Trajectory")).not.toBeInTheDocument();
     });
   });
 
@@ -224,7 +235,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+      expect(screen.getByText("Revenue Trajectory")).toBeInTheDocument();
     });
 
     const aiBtn = screen.getByRole("button", { name: /ai intelligence/i });
@@ -232,8 +243,10 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.getByText("AI Business Insights")).toBeInTheDocument();
-      // AI view must NOT render the dashboard graphs
-      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+      // AI view renders its own analytics charts...
+      expect(screen.getByText("Demand Forecasting (SMA)")).toBeInTheDocument();
+      // ...but NOT the dashboard's KPI cards (it is a distinct view).
+      expect(screen.queryByText("Total Revenue")).not.toBeInTheDocument();
     });
   });
 });

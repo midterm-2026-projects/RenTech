@@ -46,6 +46,12 @@ export async function getProducts({ page = 1, limit = 8, search = '', status = '
   return res.data; // { status, data, page, limit, total, totalPages }
 }
 
+// Soft-delete an inventory item (flags it deleted without removing history).
+export async function softDeleteProduct(id) {
+  const res = await api.patch(`/api/products/${encodeURIComponent(id)}/soft-delete`);
+  return res.data; // { status, message }
+}
+
 // Paginated transactions (admin Records view).
 export async function getTransactions({ page = 1, limit = 10, search = '', status = '' } = {}) {
   const params = { page, limit };

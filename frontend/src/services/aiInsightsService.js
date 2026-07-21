@@ -22,6 +22,68 @@ export const generateResponse = (input, insights = [], suggestions = []) => {
   return "I can help you understand insights, customer feedback, or business recommendations. Try asking about insights or suggestions.";
 };
 
+// Builds plain-language, scannable insights from the raw analytics payload.
+// Used as a graceful fallback when the generative AI endpoint is unavailable
+// so the panel still surfaces something useful instead of raw JSON.
+export function buildFallbackInsights({ kpis = {}, revenue = [], forecast = [] }) {
+  const insights = [];
+
+  const toNum = (v) => (v == null ? 0 : Number(v) || 0);
+  const php = (v) => `₱${toNum(v).toLocaleString('en-PH')}`;
+
+  if (revenue.length) {
+    const sorted = [...revenue].sort((a, b) => toNum(b.value) - toNum(a.value));
+    const total = revenue.reduce((sum, r) => sum + toNum(r.value), 0);
+    const top = sorted[0];
+    insights.push(
+      `Total revenue for the period is ${php(total)}, peaking in ${top.period} at ${php(top.value)}.`
+    );
+  }
+
+  if (kpis.inventory_utilization != null) {
+    const u = toNum(kpis.inventory_utilization);
+    insights.push(
+      `Inventory utilization is at ${u}%, signalling ${u >= 80 ? 'strong' : u >= 50 ? 'steady' : 'soft'} demand — ${u >= 80 ? 'prioritise restocking best-sellers' : 'review slow-moving stock'}.`
+    );
+  }
+
+  if (kpis.customer_satisfaction != null) {
+    const s = toNum(kpis.customer_satisfaction);
+    insights.push(
+      `Customer satisfaction sits at ${s}%, a ${s >= 90 ? 'strong' : s >= 75 ? 'healthy' : 'needing-attention'} score to maintain.`
+    );
+  }
+
+  if (kpis.overdue_returns != null) {
+    const o = toNum(kpis.overdue_returns);
+    insights.push(
+      o > 0
+        ? `There are ${o} overdue return${o === 1 ? '' : 's'} — follow up promptly to recover inventory.`
+        : `No overdue returns — rental fulfilment is on track.`
+    );
+  }
+
+  if (kpis.active_rentals != null) {
+    insights.push(`You currently have ${toNum(kpis.active_rentals)} active rental${toNum(kpis.active_rentals) === 1 ? '' : 's'} in progress.`);
+  }
+
+  if (forecast.length) {
+    const upcoming = forecast.filter((f) => f.forecast != null).slice(-3);
+    if (upcoming.length) {
+      const vals = upcoming.map((f) => toNum(f.forecast));
+      insights.push(
+        `Demand is projected to hold around ${Math.min(...vals)}–${Math.max(...vals)} rentals/month over the next few months.`
+      );
+    }
+  }
+
+  if (!insights.length) {
+    insights.push('No analytics data is available yet — connect your rental activity to unlock insights.');
+  }
+
+  return insights;
+}
+
 export async function generateReport(data = {}) {
   try {
     const response = await api.post('/api/ai/insights', { kpis: data.kpis || data });
@@ -31,14 +93,9 @@ export async function generateReport(data = {}) {
     const revenue = data.revenue || [];
     const forecast = data.forecast || [];
 
-    const kpiLines = Object.entries(kpis).map(([k, v]) => `${k}: ${v}`).join('\n');
-    const revenueLines = revenue.map(r => `${r.period}: ${r.value}`).join('\n');
-    const forecastLines = forecast.map(f => `${f.month}: actual=${f.actual || 'N/A'}, forecast=${f.forecast}`).join('\n');
+    const insights = buildFallbackInsights({ kpis, revenue, forecast });
+    const report = ['Executive Summary', '', ...insights].join('\n\n');
 
-    return {
-      insights: [`KPI Overview:\n${kpiLines || 'No KPIs available'}\n\nRevenue:\n${revenueLines || 'No revenue data'}\n\nForecast:\n${forecastLines || 'No forecast data'}`],
-      suggestions: [],
-      report: `Executive Summary\n\nBusiness metrics for the period are as follows.\n\nKey Performance Indicators\n${kpiLines || 'No KPI data available'}\n\nRevenue Analysis\n${revenueLines || 'No revenue data available'}\n\nDemand Forecast\n${forecastLines || 'No forecast data available'}`
-    };
+    return { insights, suggestions: [], report };
   }
 }

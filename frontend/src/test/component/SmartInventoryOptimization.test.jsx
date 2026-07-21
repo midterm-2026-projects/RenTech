@@ -100,7 +100,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={metrics} />);
 
-    expect(screen.getByText(/AI-adjusted:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Inventory health:/i)).toBeInTheDocument();
   });
 
   it('reduces optimization score when business performance is weak', () => {
@@ -114,7 +114,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={metrics} />);
 
-    expect(screen.getByText(/AI-adjusted:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Inventory health:/i)).toBeInTheDocument();
   });
 
   it('generates promotion recommendations for not rented items', () => {

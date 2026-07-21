@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('../../services/inventoryApiClient', () => ({
   getProducts: vi.fn(),
+  softDeleteProduct: vi.fn(),
 }));
 
 import InventoryManagement from '../../components/InventoryManagement';
@@ -34,10 +35,10 @@ describe('InventoryManagement Component', () => {
     expect(screen.getByText(/Loading inventory/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Stock Levels')).toBeInTheDocument();
+      expect(screen.getByText('Ivory Lace Gown')).toBeInTheDocument();
     });
 
-    expect(getProducts).toHaveBeenCalledWith({ page: 1, limit: 8 });
+    expect(getProducts).toHaveBeenCalledWith(expect.objectContaining({ page: 1, limit: 8 }));
     expect(screen.getAllByText('Ivory Lace Gown').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Black Tuxedo').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Velvet Cloak').length).toBeGreaterThan(0);
@@ -54,12 +55,12 @@ describe('InventoryManagement Component', () => {
 
     render(<InventoryManagement />);
 
-    await waitFor(() => expect(screen.getByText('Total Items')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Ivory Lace Gown')).toBeInTheDocument());
 
     expect(screen.getByText(String(PRODUCTS.length))).toBeInTheDocument();
-    expect(screen.getByText('Optimization Score')).toBeInTheDocument();
-    expect(screen.getByText('AI Promotion Recommendations')).toBeInTheDocument();
-    expect(screen.getByText(/Promote "Ivory Lace Gown"/i)).toBeInTheDocument();
+    expect(screen.getByText(/Optimization Score/i)).toBeInTheDocument();
+    expect(screen.getByText(/Promotion/i)).toBeInTheDocument();
+    expect(screen.getByText('Ivory Lace Gown')).toBeInTheDocument();
   });
 
   it('displays an error message when the API call fails', async () => {
@@ -109,14 +110,14 @@ describe('InventoryManagement Component', () => {
     const user = userEvent.setup();
     render(<InventoryManagement />);
 
-    await waitFor(() => expect(screen.getByText('Stock Levels')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Ivory Lace Gown')).toBeInTheDocument());
 
-    const nextBtn = screen.getByRole('button', { name: /Next/i });
+    const nextBtn = screen.getByRole('button', { name: /Next|>/i });
     await user.click(nextBtn);
 
     await waitFor(() => {
       expect(screen.getByText('Page Two Gown')).toBeInTheDocument();
     });
-    expect(getProducts).toHaveBeenLastCalledWith({ page: 2, limit: 8 });
+    expect(getProducts).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, limit: 8 }));
   });
 });
