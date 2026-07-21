@@ -7,8 +7,8 @@ import * as customerService from "../../services/customerAssistantService";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
-    vi.spyOn(customerService, "generateCustomerResponse").mockImplementation(
-      (input) => `Mock reply for: "${input}"`
+    vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
+      'Mock reply for: "Show me gowns"'
     );
     vi.spyOn(window, "alert").mockImplementation(() => {});
   });
@@ -198,6 +198,9 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
   it("allows sending a message through the chat widget", async () => {
+    customerService.postAssistantMessage.mockResolvedValue(
+      'Mock reply for: "Show me gowns"'
+    );
     const user = userEvent.setup();
     renderCustomerLayout();
 
@@ -219,6 +222,9 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
   it("sends a message via Enter key in the chat widget", async () => {
+    customerService.postAssistantMessage.mockResolvedValue(
+      'Mock reply for: "Rent a suit"'
+    );
     const user = userEvent.setup();
     renderCustomerLayout();
 

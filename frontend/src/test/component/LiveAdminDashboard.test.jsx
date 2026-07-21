@@ -12,6 +12,10 @@ vi.mock('recharts', async () => {
 
 vi.mock('../../services/analyticsApiClient', () => ({
   getAnalyticsDashboard: vi.fn(),
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: { insights: [], suggestions: [] } })),
+  },
 }));
 
 import LiveAdminDashboard from '../../components/LiveAdminDashboard';
@@ -41,7 +45,7 @@ describe('LiveAdminDashboard', () => {
 
   it('renders the dashboard once data loads', async () => {
     getAnalyticsDashboard.mockResolvedValue({
-      summaries: [{ period: 'Jan', metric_value: 10 }],
+      summaries: [{ period: 'Jan', metric_value: 10, metric_name: 'revenue' }],
       forecasts: [],
       kpis: [],
       projections: [],
@@ -60,7 +64,7 @@ describe('LiveAdminDashboard', () => {
     expect(retry).toBeInTheDocument();
 
     getAnalyticsDashboard.mockResolvedValue({
-      summaries: [{ period: 'Jan', metric_value: 10 }],
+      summaries: [{ period: 'Jan', metric_value: 10, metric_name: 'revenue' }],
       forecasts: [],
       kpis: [],
       projections: [],

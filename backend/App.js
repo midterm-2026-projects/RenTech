@@ -6,6 +6,7 @@ import path from 'path';
 
 import bookingService from './service/booking.service.js';
 import transactionService from './service/transaction.service.js';
+import productService from './service/product.service.js';
 import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
 import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
@@ -73,10 +74,47 @@ bookingRoutes.post('/bookings', async (req, res) => {
 // ====================
 transactionRoutes.get('/transactions', async (req, res) => {
   try {
-    const transactions = await transactionService.getTransactions();
-    res.json(transactions);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const { search, status } = req.query;
+
+    const { data, total, error } = await transactionService.getTransactions({
+      page,
+      limit,
+      search: search || '',
+      status: status || '',
+    });
+
+    if (error) {
+      return res.status(500).json({ status: 'error', message: error.message });
+    }
+
+    res.json({
+      status: 'success',
+      data,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+transactionRoutes.patch('/transactions/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const updated = await transactionService.updateTransactionStatus(req.params.id, status);
+    if (updated.error) {
+      return res.status(500).json({ status: 'error', message: updated.error.message });
+    }
+    if (!updated.data) {
+      return res.status(404).json({ status: 'error', message: 'Transaction not found' });
+    }
+    res.json({ status: 'success', data: updated.data });
+  } catch (error) {
+    res.status(400).json({ status: 'error', message: error.message });
   }
 });
 
@@ -128,8 +166,34 @@ transactionRoutes.get('/transactions/costs', async (req, res) => {
 // ====================
 // Product Endpoints
 // ====================
-productRoutes.get('/products', (req, res) => {
-  res.json([]);
+productRoutes.get('/products', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 8;
+    const { search, status } = req.query;
+
+    const { data, total, error } = await productService.getProducts({
+      page,
+      limit,
+      search: search || '',
+      status: status || '',
+    });
+
+    if (error) {
+      return res.status(500).json({ status: 'error', message: error.message });
+    }
+
+    res.json({
+      status: 'success',
+      data,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
 });
 
 // ====================

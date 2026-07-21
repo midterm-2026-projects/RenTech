@@ -12,7 +12,7 @@ const LoadingSkeleton = ({ variant = 'chart', count = 3, loading = true }) => {
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
-            className="p-6 border rounded-lg shadow-sm bg-white flex items-center justify-between animate-pulse"
+            className="p-6 border border-gray-200 rounded-lg shadow-sm bg-white flex items-center justify-between animate-pulse"
           >
             <div className="space-y-2">
               <div className="h-3 w-20 bg-gray-200 rounded" />
@@ -28,7 +28,7 @@ const LoadingSkeleton = ({ variant = 'chart', count = 3, loading = true }) => {
   if (variant === 'table') {
     return (
       <div
-        className="w-full border rounded-lg bg-white p-6 animate-pulse"
+        className="w-full border border-gray-200 rounded-lg bg-white p-6 animate-pulse"
         data-testid="skeleton-table"
       >
         {Array.from({ length: count }).map((_, i) => (
@@ -41,7 +41,7 @@ const LoadingSkeleton = ({ variant = 'chart', count = 3, loading = true }) => {
   // chart (default)
   return (
     <div
-      className="w-full h-96 p-6 border rounded-lg shadow-sm bg-white animate-pulse"
+      className="w-full h-96 p-6 border border-gray-200 rounded-lg shadow-sm bg-white animate-pulse"
       data-testid="skeleton-chart"
     >
       <div className="h-6 w-48 bg-gray-200 rounded mb-6" />
