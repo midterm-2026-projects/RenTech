@@ -6,7 +6,7 @@ import {
 const SmartInventoryOptimization = ({ metrics }) => {
   if (!metrics) {
     return (
-      <div className="p-4 bg-gray-50 border rounded-md" data-testid="inventory-fallback">
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-md" data-testid="inventory-fallback">
         <p className="text-gray-500 italic">
           Inventory and sales data unavailable.
         </p>
@@ -52,21 +52,21 @@ const SmartInventoryOptimization = ({ metrics }) => {
       {/* STATS GRID */}
       <div className="grid grid-cols-2 gap-4">
 
-        <div className="p-4 border rounded bg-blue-50">
+        <div className="p-4 border border-gray-200 rounded bg-blue-50">
           <h4 className="text-sm font-semibold text-gray-600">Total Sales</h4>
           <p className="text-2xl font-bold" data-testid="total-sales">
             {totalSales}
           </p>
         </div>
 
-        <div className="p-4 border rounded bg-red-50">
+        <div className="p-4 border border-gray-200 rounded bg-red-50">
           <h4 className="text-sm font-semibold text-gray-600">Low Stock Items</h4>
           <p className="text-2xl font-bold text-red-600" data-testid="low-stock">
             {lowStockItems}
           </p>
         </div>
 
-        <div className="p-4 border rounded bg-green-50">
+        <div className="p-4 border border-gray-200 rounded bg-green-50">
           <h4 className="text-sm font-semibold text-gray-600">
             Optimization Score
           </h4>
@@ -79,7 +79,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
           </p>
         </div>
 
-        <div className="p-4 border rounded bg-purple-50">
+        <div className="p-4 border border-gray-200 rounded bg-purple-50">
           <h4 className="text-sm font-semibold text-gray-600">
             Top Performing Item
           </h4>
@@ -91,7 +91,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
       </div>
 
       {/* RENTAL INSIGHTS */}
-      <div className="mt-6 p-4 border rounded bg-gray-50">
+      <div className="mt-6 p-4 border border-gray-200 rounded bg-gray-50">
         <h3 className="font-semibold text-gray-700 mb-2">
           Rental Utilization Insight
         </h3>
@@ -103,7 +103,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
       </div>
 
       {/* PROMOTION ENGINE */}
-      <div className="mt-6 p-4 border rounded bg-yellow-50">
+      <div className="mt-6 p-4 border border-gray-200 rounded bg-yellow-50">
         <h3 className="font-semibold text-yellow-700 mb-2">
           AI Promotion Recommendations
         </h3>

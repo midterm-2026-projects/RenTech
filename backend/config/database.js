@@ -7,6 +7,28 @@ function getProjectRef() {
   return match ? match[1] : null;
 }
 
+function interpolateParams(sqlText, params) {
+  if (!params || params.length === 0) return sqlText;
+  let result = sqlText;
+  params.forEach((param, index) => {
+    const placeholder = `$${index + 1}`;
+    let value;
+    if (param === null || param === undefined) {
+      value = 'NULL';
+    } else if (typeof param === 'string') {
+      value = `'${param.replace(/'/g, "''")}'`;
+    } else if (typeof param === 'number' || typeof param === 'boolean') {
+      value = String(param);
+    } else if (param instanceof Date) {
+      value = `'${param.toISOString()}'`;
+    } else {
+      value = `'${JSON.stringify(param).replace(/'/g, "''")}'`;
+    }
+    result = result.replace(new RegExp(`\\$${index + 1}\\b`, 'g'), value);
+  });
+  return result;
+}
+
 export async function query(sqlText, params) {
   const projectRef = getProjectRef();
   const pat = process.env.SUPABASE_PAT;
@@ -20,6 +42,8 @@ export async function query(sqlText, params) {
     );
   }
 
+  const interpolatedSql = interpolateParams(sqlText, params);
+
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
     {
@@ -28,7 +52,7 @@ export async function query(sqlText, params) {
         'Authorization': `Bearer ${pat}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query: sqlText }),
+      body: JSON.stringify({ query: interpolatedSql }),
     }
   );
 

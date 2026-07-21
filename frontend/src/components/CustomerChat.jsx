@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import ChatBox from './ChatBox';
-import { generateCustomerResponse } from '../services/customerAssistantService';
+import { postAssistantMessage } from '../services/customerAssistantService';
 
 const CustomerChat = ({ products = [] }) => {
   const [messages, setMessages] = useState([
@@ -14,18 +14,24 @@ const CustomerChat = ({ products = [] }) => {
 
     const userMessage = { role: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
+    const question = input;
     setInput('');
     setLoading(true);
 
-    // Simulate network delay (replace with real API call later)
-    setTimeout(() => {
-      const botReply = {
+    try {
+      const reply = await postAssistantMessage(question);
+      if (reply === null) {
+        throw new Error('API unavailable');
+      }
+      setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+    } catch {
+      setMessages(prev => [...prev, {
         role: 'assistant',
-        text: generateCustomerResponse(input, [], products) ?? "I'm not sure how to respond to that."
-      };
-      setMessages(prev => [...prev, botReply]);
+        text: 'AI assistant is currently unavailable. Please try again later or contact the boutique directly.'
+      }]);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

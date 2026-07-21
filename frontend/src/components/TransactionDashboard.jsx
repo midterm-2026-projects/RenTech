@@ -1,96 +1,149 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getTransactions, updateTransactionStatus } from '../services/inventoryApiClient';
+
+const PAGE_SIZE = 10;
+
+// Render any stored date (ISO "2026-07-21" or locale "Jul 21, 2026") in a
+// single consistent display format so the table never shows mixed formats.
+function formatTransactionDate(raw) {
+  if (!raw) return '—';
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function TransactionDashboard() {
   const [searchText, setSearchText] = useState("");
-  const [userRole, setUserRole] = useState("Admin"); 
-  
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedStatuses, setSelectedStatuses] = useState({
-    Active: false,
-    Reserved: false,
-    Returned: false 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [userRole] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rentech_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.role) return parsed.role;
+      }
+    } catch {
+      // ignore malformed session
+    }
+    return 'Admin';
   });
 
-  const [transactions, setTransactions] = useState([
-    { id: "TX-1001", username: "ana rivera", itemName: "Vintage Gatsby Sequin Dress", date: "May 01, 2026", pricePerDay: 500, daysRented: 3, totalCost: 1500, status: "Active" },
-    { id: "TX-1002", username: "carlos mendez", itemName: "Barong Tagalog", date: "May 02, 2026", pricePerDay: 400, daysRented: 2, totalCost: 800, status: "Active" },
-    { id: "TX-1003", username: "liza santos", itemName: "Emerald Velvet Gown", date: "May 03, 2026", pricePerDay: 600, daysRented: 3, totalCost: 1800, status: "Active" },
-    { id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "May 04, 2026", pricePerDay: 700, daysRented: 2, totalCost: 1400, status: "Returned" },
-    { id: "TX-1005", username: "isabel garcia", itemName: "Champagne Silk Gown", date: "May 02, 2026", pricePerDay: 850, daysRented: 2, totalCost: 1700, status: "Active" }
-  ]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState({
+    Confirmed: false,
+    Reserved: false,
+    Overdue: false,
+    Completed: false,
+    Cancelled: false
+  });
 
-  useEffect(function() {
-    const savedSession = localStorage.getItem('rentech_session');
-    if (savedSession !== null) {
-      const parsedSession = JSON.parse(savedSession);
-      if (parsedSession.role) {
-        setUserRole(parsedSession.role);
-      }
-    }
-  }, []);
+  const [transactions, setTransactions] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  function handleReturnClick(idToUpdate) {
-    const updatedArray = [];
-    for (let i = 0; i < transactions.length; i++) {
-      const currentItem = transactions[i];
-      if (currentItem.id === idToUpdate) {
-        updatedArray.push({ ...currentItem, status: "Returned" });
-      } else {
-        updatedArray.push(currentItem);
-      }
+  // Debounce the search input so we don't hit the API on every keystroke.
+  useEffect(function () {
+    const t = setTimeout(() => setDebouncedSearch(searchText), 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  const activeStatuses = Object.keys(selectedStatuses).filter(
+    (key) => selectedStatuses[key]
+  );
+  const statusParam = activeStatuses.join(',');
+
+  const loadTransactions = useCallback(async (nextPage) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getTransactions({
+        page: nextPage,
+        limit: PAGE_SIZE,
+        search: debouncedSearch,
+        status: statusParam,
+      });
+      setTransactions(res.data || []);
+      setTotal(res.total || 0);
+      setTotalPages(res.totalPages || 1);
+      setPage(nextPage);
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Failed to load transactions');
+      setTransactions([]);
+    } finally {
+      setLoading(false);
     }
-    setTransactions(updatedArray);
-    alert("Item status updated to Returned!");
+  }, [debouncedSearch, statusParam]);
+
+  // Reload page 1 whenever the search term or status filter changes.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTransactions(1);
+  }, [loadTransactions]);
+
+  async function handleReturnClick(idToUpdate) {
+    try {
+      await updateTransactionStatus(idToUpdate, 'Returned');
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === idToUpdate ? { ...t, status: 'Returned' } : t
+        )
+      );
+      alert("Item status updated to Returned!");
+    } catch {
+      alert("Failed to update status. Please try again.");
+    }
+  }
+
+  async function handleExport() {
+    try {
+      const res = await getTransactions({
+        page: 1,
+        limit: 1000,
+        search: debouncedSearch,
+        status: statusParam,
+      });
+      const rows = res.data || [];
+      if (!rows.length) {
+        alert('No records to export.');
+        return;
+      }
+      const header = ['ID', 'Customer', 'Item', 'Date', 'Status', 'Amount'];
+      const body = rows.map((r) => [
+        r.id,
+        r.username,
+        r.itemName,
+        r.date,
+        r.status,
+        `₱${Number(r.totalCost || 0).toLocaleString()}`,
+      ]);
+      downloadCSV('transactions.csv', [header, ...body]);
+    } catch {
+      alert('Failed to export transactions. Please try again.');
+    }
   }
 
   function handleCheckboxChange(statusKey) {
-    setSelectedStatuses(prev => ({
+    setSelectedStatuses((prev) => ({
       ...prev,
       [statusKey]: !prev[statusKey]
     }));
   }
 
-  const filteredTransactions = [];
-  const searchKeyword = searchText.toLowerCase().trim();
-
-  const isAnyStatusFilterActive = selectedStatuses.Active || selectedStatuses.Reserved || selectedStatuses.Returned;
-
-  for (let i = 0; i < transactions.length; i++) {
-    const item = transactions[i];
-    
-    const customerName = item.username.toLowerCase();
-    const itemName = item.itemName.toLowerCase();
-    const recordId = item.id.toLowerCase();
-
-    const matchesSearch = customerName.includes(searchKeyword) || 
-                          itemName.includes(searchKeyword) || 
-                          recordId.includes(searchKeyword);
-
-    let matchesStatus = true;
-    if (isAnyStatusFilterActive) {
-      matchesStatus = false;
-      if (selectedStatuses.Active && item.status === "Active") matchesStatus = true;
-      if (selectedStatuses.Reserved && item.status === "Reserved") matchesStatus = true;
-      if (selectedStatuses.Returned && item.status === "Returned") matchesStatus = true;
-    }
-
-    if (matchesSearch && matchesStatus) {
-      filteredTransactions.push(item);
-    }
-  }
-
   function renderTableRows() {
     const tableRowsHtml = [];
 
-    for (let i = 0; i < filteredTransactions.length; i++) {
-      const item = filteredTransactions[i];
+    for (let i = 0; i < transactions.length; i++) {
+      const item = transactions[i];
 
-      let actionElement = null;
+      let actionElement;
       if (userRole === "Customer") {
         actionElement = <span style={{ color: '#cbd5e1', fontSize: '13px' }}>None</span>;
       } else if (item.status === "Returned") {
         actionElement = (
-          <button 
+          <button
             disabled
             style={{ border: 'none', backgroundColor: '#f1f5f9', color: '#cbd5e1', width: '32px', height: '32px', borderRadius: '50%', cursor: 'not-allowed', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Already returned"
@@ -100,8 +153,8 @@ export default function TransactionDashboard() {
         );
       } else {
         actionElement = (
-          <button 
-            onClick={function() { handleReturnClick(item.id); }}
+          <button
+            onClick={function () { handleReturnClick(item.id); }}
             style={{ border: 'none', backgroundColor: '#fff5f5', color: '#e05656', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Process Return Modification"
           >
@@ -125,13 +178,13 @@ export default function TransactionDashboard() {
           <td style={{ padding: '20px 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>{item.id}</td>
           <td style={{ padding: '20px 12px', color: '#334155', fontSize: '15px', textTransform: 'capitalize' }}>{item.username}</td>
           <td style={{ padding: '20px 12px', color: '#64748b', fontSize: '15px' }}>{item.itemName}</td>
-          <td style={{ padding: '20px 12px', color: '#64748b', fontSize: '15px' }}>{item.date}</td>
+          <td style={{ padding: '20px 12px', color: '#64748b', fontSize: '15px' }}>{formatTransactionDate(item.date)}</td>
           <td style={{ padding: '20px 12px' }}>
             <span style={{ backgroundColor: statusBgColor, color: statusTextColor, padding: '6px 14px', borderRadius: '15px', fontSize: '13px', fontWeight: '600' }}>
               {item.status}
             </span>
           </td>
-          <td style={{ padding: '20px 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>₱{item.totalCost.toLocaleString()}</td>
+          <td style={{ padding: '20px 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>₱{(Number(item.totalCost) || 0).toLocaleString()}</td>
           <td style={{ padding: '20px 12px' }}>{actionElement}</td>
         </tr>
       );
@@ -143,7 +196,7 @@ export default function TransactionDashboard() {
   return (
     /* Top Main Layout Frame Layer restricting frame height view */
     <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'sans-serif' }}>
-      
+
       {/* INDEPENDENTLY SCROLLABLE DATA DASHBOARD BODY */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px 40px 40px' }}>
         <h1 style={{ margin: '0 0 5px 0', fontSize: '32px', color: '#0f172a', fontWeight: 'bold' }}>Records</h1>
@@ -151,87 +204,118 @@ export default function TransactionDashboard() {
 
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '30px', position: 'relative' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <svg 
-              width="18" 
-              height="18" 
-              viewBox="0 0 24 24" 
-              fill="none" 
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
               style={{ position: 'absolute', left: '20px', pointerEvents: 'none' }}
             >
               <circle cx="11" cy="11" r="7" stroke="#94a3b8" strokeWidth="2.5" />
               <path d="M16 16L21 21" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            
-            <input 
-              type="text" 
-              placeholder="Search by ID, customer, or item..." 
+
+            <input
+              type="text"
+              placeholder="Search by ID, customer, or item..."
               value={searchText}
-              onChange={function(e) { setSearchText(e.target.value); }}
-              style={{ 
-                padding: '14px 24px 14px 48px', 
-                width: '426px', 
-                borderRadius: '25px', 
-                border: '1px solid #e2e8f0', 
-                backgroundColor: '#f8fafc', 
-                outline: 'none', 
-                fontSize: '15px' 
+              onChange={function (e) { setSearchText(e.target.value); }}
+              style={{
+                padding: '14px 24px 14px 48px',
+                width: '426px',
+                borderRadius: '25px',
+                border: '1px solid #e2e8f0',
+                backgroundColor: '#f8fafc',
+                outline: 'none',
+                fontSize: '15px'
               }}
             />
           </div>
-          
-          <button 
+
+          <button
             aria-label="Filter configuration options"
-            onClick={function() { setIsFilterOpen(!isFilterOpen); }}
-            style={{ 
-              marginLeft: '12px', 
-              width: '45px', 
-              height: '45px', 
-              borderRadius: '50%', 
-              border: '1px solid #e2e8f0', 
-              backgroundColor: isFilterOpen ? '#f1f5f9' : 'white', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
+            onClick={function () { setIsFilterOpen(!isFilterOpen); }}
+            style={{
+              marginLeft: '12px',
+              width: '45px',
+              height: '45px',
+              borderRadius: '50%',
+              border: '1px solid #e2e8f0',
+              backgroundColor: isFilterOpen ? '#f1f5f9' : 'white',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               padding: '0',
               outline: 'none'
             }}
           >
-            <svg 
-              width="21" 
-              height="21" 
-              viewBox="0 0 24 24" 
-              fill="none" 
+            <svg
+              width="21"
+              height="21"
+              viewBox="0 0 24 24"
+              fill="none"
               style={{ display: 'block' }}
             >
-              <path 
-                d="M3 4.5H21L14 12.5V18.5L10 20.5V12.5L3 4.5Z" 
-                stroke="#475569" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <path
+                d="M3 4.5H21L14 12.5V18.5L10 20.5V12.5L3 4.5Z"
+                stroke="#475569"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
           </button>
 
+          <button
+            type="button"
+            onClick={handleExport}
+            style={{
+              marginLeft: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              height: '45px',
+              padding: '0 16px',
+              borderRadius: '12px',
+              border: '1px solid #10b981',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
+            Export CSV
+          </button>
+
           {isFilterOpen && (
             <div style={{ position: 'absolute', top: '55px', left: '410px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0px 10px 25px rgba(0,0,0,0.08)', padding: '20px', width: '180px', zIndex: 10 }}>
               <span style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', letterSpacing: '0.05em', marginBottom: '15px' }}>STATUS</span>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Active} onChange={function() { handleCheckboxChange('Active'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Active
+                  <input type="checkbox" checked={selectedStatuses.Confirmed} onChange={function () { handleCheckboxChange('Confirmed'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                  Confirmed
                 </label>
-                
+
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Reserved} onChange={function() { handleCheckboxChange('Reserved'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                  <input type="checkbox" checked={selectedStatuses.Reserved} onChange={function () { handleCheckboxChange('Reserved'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
                   Reserved
                 </label>
-                
+
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Returned} onChange={function() { handleCheckboxChange('Returned'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Returned
+                  <input type="checkbox" checked={selectedStatuses.Overdue} onChange={function () { handleCheckboxChange('Overdue'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                  Overdue
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={selectedStatuses.Completed} onChange={function () { handleCheckboxChange('Completed'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                  Completed
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={selectedStatuses.Cancelled} onChange={function () { handleCheckboxChange('Cancelled'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                  Cancelled
                 </label>
               </div>
             </div>
@@ -251,16 +335,69 @@ export default function TransactionDashboard() {
             </tr>
           </thead>
           <tbody>
-            {renderTableRows()}
+            {loading && (
+              <tr>
+                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading records…</td>
+              </tr>
+            )}
+            {!loading && error && (
+              <tr>
+                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#e05656' }}>{error}</td>
+              </tr>
+            )}
+            {!loading && !error && renderTableRows()}
           </tbody>
         </table>
 
-        {filteredTransactions.length === 0 && (
+        {!loading && !error && transactions.length === 0 && (
           <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '16px' }}>
             No records match your tracking filter options.
+          </div>
+        )}
+
+        {!loading && !error && totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
+            <span style={{ color: '#94a3b8', fontSize: '14px' }}>
+              {total} record{total === 1 ? '' : 's'} · Page {page} of {totalPages}
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={function () { loadTransactions(Math.max(1, page - 1)); }}
+                disabled={page <= 1}
+                style={{ padding: '10px 18px', borderRadius: '20px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#334155', cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.4 : 1, fontSize: '14px' }}
+              >
+                ← Prev
+              </button>
+              <button
+                type="button"
+                onClick={function () { loadTransactions(Math.min(totalPages, page + 1)); }}
+                disabled={page >= totalPages}
+                style={{ padding: '10px 18px', borderRadius: '20px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#334155', cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.4 : 1, fontSize: '14px' }}
+              >
+                Next →
+              </button>
+            </div>
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function downloadCSV(filename, rows) {
+  const escape = (cell) => {
+    const s = String(cell == null ? '' : cell);
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+  const csv = rows.map((r) => r.map(escape).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

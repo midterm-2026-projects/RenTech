@@ -1,24 +1,29 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import AIBusinessInsights from '../../components/AIBusinessInsights';
+
+vi.mock('../../services/analyticsApiClient', () => ({
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: { insights: [], suggestions: [] } })),
+  },
+}));
 
 describe('AIBusinessInsights Component', () => {
 
-  it('renders a fallback UI when data is completely empty or null', () => {
-    render(<AIBusinessInsights insights={[]} suggestions={[]} />);
-    expect(screen.getByTestId('ai-fallback')).toHaveTextContent(
-      'No AI insights or suggestions available'
+  it('renders a fallback UI when data is completely empty or null', async () => {
+    render(<AIBusinessInsights insights={null} suggestions={null} />);
+    await waitFor(() =>
+      expect(screen.getByText(/No AI business insights available at this time/i)).toBeInTheDocument()
     );
   });
 
-  it('correctly renders mock AI-generated text/suggestions', () => {
+  it('correctly renders mock AI-generated insight text', () => {
     const mockInsights = ['Rental demand for winter coats is up 20% this week.'];
-    const mockSuggestions = ['Recommend styling scarves to customers renting coats.'];
 
-    render(<AIBusinessInsights insights={mockInsights} suggestions={mockSuggestions} />);
+    render(<AIBusinessInsights insights={mockInsights} suggestions={[]} />);
 
     expect(screen.getByText(mockInsights[0])).toBeInTheDocument();
-    expect(screen.getByText(mockSuggestions[0])).toBeInTheDocument();
   });
 
   it('properly updates the UI when new mock prop values are passed', () => {
@@ -37,10 +42,9 @@ describe('AIBusinessInsights Component', () => {
 
     expect(screen.queryByText('Initial insight')).not.toBeInTheDocument();
     expect(screen.getByText('Updated insight')).toBeInTheDocument();
-    expect(screen.getByText('New suggestion')).toBeInTheDocument();
   });
 
-  it('displays insights but shows fallback for empty suggestions', () => {
+  it('displays insights and no longer renders a suggestions section', () => {
     render(
       <AIBusinessInsights
         insights={['Stock moving quickly.']}
@@ -48,30 +52,22 @@ describe('AIBusinessInsights Component', () => {
       />
     );
 
-    expect(screen.queryByTestId('ai-fallback')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No AI business insights available/i)).not.toBeInTheDocument();
 
     expect(screen.getByTestId('insights-list')).toBeInTheDocument();
     expect(screen.getByText('Stock moving quickly.')).toBeInTheDocument();
 
     expect(screen.queryByTestId('suggestions-list')).not.toBeInTheDocument();
-    expect(screen.getByText('No suggestions available.')).toBeInTheDocument();
+    expect(screen.queryByText(/No suggestions available/i)).not.toBeInTheDocument();
   });
 
-  it('displays suggestions but shows fallback for empty insights', () => {
-    render(
-      <AIBusinessInsights
-        insights={null}
-        suggestions={['Bundle items for discount.']}
-      />
-    );
+  it('shows the fallback when no insights are provided', async () => {
+    render(<AIBusinessInsights insights={null} suggestions={['Bundle items for discount.']} />);
 
-    expect(screen.queryByTestId('ai-fallback')).not.toBeInTheDocument();
-
+    await waitFor(() => {
+      expect(screen.getByText(/No AI business insights available at this time/i)).toBeInTheDocument();
+    });
     expect(screen.queryByTestId('insights-list')).not.toBeInTheDocument();
-    expect(screen.getByText('No insights available.')).toBeInTheDocument();
-
-    expect(screen.getByTestId('suggestions-list')).toBeInTheDocument();
-    expect(screen.getByText('Bundle items for discount.')).toBeInTheDocument();
   });
 
 });
