@@ -6,10 +6,10 @@ import path from 'path';
 
 import bookingService from './service/booking.service.js';
 import transactionService from './service/transaction.service.js';
-import productService from './service/product.service.js';
 import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
 import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
+import { registerProductRoutes } from './route/productRoute.js';
 import analyticsModel from './model/analytics.model.js';
 import { register, login } from './controller/loginController.js';
 import { getRentalHistory, getTransactionSummary, calculateTransactionCosts } from './service/transactionMonitoring.service.js';
@@ -41,6 +41,7 @@ registerAiRoutes(aiRouter);
 // ====================
 const bookingRoutes = express.Router();
 const productRoutes = express.Router();
+registerProductRoutes(productRoutes);
 const loginRoutes = express.Router();
 const transactionRoutes = express.Router();
 const analyticsRouter = express.Router();
@@ -160,39 +161,6 @@ transactionRoutes.get('/transactions/costs', async (req, res) => {
     res.json(costData);
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-// ====================
-// Product Endpoints
-// ====================
-productRoutes.get('/products', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 8;
-    const { search, status } = req.query;
-
-    const { data, total, error } = await productService.getProducts({
-      page,
-      limit,
-      search: search || '',
-      status: status || '',
-    });
-
-    if (error) {
-      return res.status(500).json({ status: 'error', message: error.message });
-    }
-
-    res.json({
-      status: 'success',
-      data,
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    });
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
   }
 });
 
