@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Bell, LogOut } from 'lucide-react';
+import { clearSession } from './Login';
 
 export default function AccountSettings() {
+  const navigate = useNavigate();
   // --- State for SMS Templates ---
   const defaultTemplates = {
     bookingConfirmation: "Hi {customerName}, your booking for {itemName} on {rentalDate} is confirmed! Show this QR when you pick up your item: {qrCode}. Thank you for choosing RENTECH.",
@@ -174,7 +177,7 @@ export default function AccountSettings() {
           <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-2">
             <h3 className="text-sm font-bold text-slate-900">Account Actions</h3>
             <p className="text-slate-400 text-xs">You can sign out of your account and return to the landing page.</p>
-            <button className="flex items-center gap-1.5 px-4 py-2 bg-rose-50/60 text-rose-700 font-bold text-xs rounded-xl border border-rose-100/70 hover:bg-rose-100/50 transition mt-2">
+            <button onClick={() => { clearSession(); navigate("/", { replace: true }); }} className="flex items-center gap-1.5 px-4 py-2 bg-rose-50/60 text-rose-700 font-bold text-xs rounded-xl border border-rose-100/70 hover:bg-rose-100/50 transition mt-2">
               <LogOut className="w-3.5 h-3.5" /> Sign Out
             </button>
           </section>

@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import KPICards from './KPICards';
-import AnalyticsDashboard from './AnalyticsDashboard';
-import ReportExport from './ReportExport';
+import DashboardCharts from './DashboardCharts';
 import LoadingSkeleton from './LoadingSkeleton';
-import AIBusinessInsights from './AIBusinessInsights';
 import { getAnalyticsDashboard } from '../services/analyticsApiClient';
 import { getProducts, getTransactions } from '../services/inventoryApiClient';
 
@@ -45,7 +43,7 @@ const LiveAdminDashboard = () => {
     setState((s) => ({ ...s, loading: true, error: null }));
     Promise.allSettled([
       getAnalyticsDashboard(),
-      getProducts({ limit: 1 }),
+      getProducts({ limit: 200 }),
       getTransactions({ limit: 200 }),
     ])
       .then(([analyticsRes, productsRes, txRes]) => {
@@ -105,7 +103,7 @@ const LiveAdminDashboard = () => {
     );
   }
 
-  const { summaries = [], forecasts = [], projections = [], kpis = [] } = state.data || {};
+  const { summaries = [], projections = [], kpis = [] } = state.data || {};
 
   // Real KPI values from the live inventory + transaction tables.
   const kpiMap = {};
@@ -113,26 +111,47 @@ const LiveAdminDashboard = () => {
     kpiMap[k.kpi_name] = k.kpi_value;
   });
 
-  const inventoryTotal = state.products?.total != null ? state.products.total : toNum(kpiMap['inventory_items']);
+  // The pre-aggregated KPI table is the source of truth; fall back to the
+  // live tables only when a KPI value is missing.
+  const inventoryTotal = kpiMap['inventory_items'] != null
+    ? toNum(kpiMap['inventory_items'])
+    : (state.products?.total != null ? state.products.total : 0);
   const txs = state.transactions?.data || [];
   const hasTx = txs.length > 0;
 
-  const totalRevenue = txs.reduce((sum, t) => sum + (Number(t.totalCost) || 0), 0);
+  const totalRevenue = kpiMap['monthly_revenue'] != null
+    ? toNum(kpiMap['monthly_revenue'])
+    : txs.reduce((sum, t) => sum + (Number(t.totalCost) || 0), 0);
   const forecastRevenue = projections.reduce((sum, p) => sum + (Number(p.projected_revenue) || 0), 0);
 
-  const activeRentals = hasTx
-    ? txs.filter((t) => ACTIVE_STATUSES.includes(t.status)).length
-    : toNum(kpiMap['active_rentals']);
-  const reservations = hasTx
-    ? txs.filter((t) => t.status === 'Reserved').length
-    : toNum(kpiMap['reservations']);
-  const overdueReturns = hasTx
-    ? txs.filter((t) => t.status === 'Overdue').length
-    : toNum(kpiMap['overdue_returns']);
+  const activeRentals = kpiMap['active_rentals'] != null
+    ? toNum(kpiMap['active_rentals'])
+    : (hasTx ? txs.filter((t) => ACTIVE_STATUSES.includes(t.status)).length : 0);
+  const reservations = kpiMap['reservations'] != null
+    ? toNum(kpiMap['reservations'])
+    : (hasTx ? txs.filter((t) => t.status === 'Reserved').length : 0);
+  const overdueReturns = kpiMap['overdue_returns'] != null
+    ? toNum(kpiMap['overdue_returns'])
+    : (hasTx ? txs.filter((t) => t.status === 'Overdue').length : 0);
 
-  const utilization = inventoryTotal
-    ? Math.round((activeRentals / inventoryTotal) * 100)
-    : toNum(kpiMap['inventory_utilization']);
+  const utilization = kpiMap['inventory_utilization'] != null
+    ? toNum(kpiMap['inventory_utilization'])
+    : (inventoryTotal ? Math.round((activeRentals / inventoryTotal) * 100) : 0);
+
+  const bookingStatus = {
+    confirmed: activeRentals - reservations - overdueReturns,
+    reserved: reservations,
+    overdue: overdueReturns,
+  };
+
+  // Live inventory status breakdown (Available / Rented / Overdue / Maintenance).
+  const productRows = state.products?.data || [];
+  const productStatusMap = productRows.reduce((acc, p) => {
+    const key = p.status || 'Unknown';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const productStatus = Object.entries(productStatusMap).map(([name, value]) => ({ name, value }));
 
   const metrics = {
     totalRevenue: `₱${totalRevenue.toLocaleString()}`,
@@ -157,27 +176,18 @@ const LiveAdminDashboard = () => {
     }))
     .sort((a, b) => monthIndex(a.month) - monthIndex(b.month));
 
-  const forecastData = forecasts
-    .map((f) => {
-      const date = f.forecast_date || f.period;
-      return {
-        month: toMonthLabel(date),
-        actualDemand: f.actual_value != null ? Number(f.actual_value) : null,
-        projectedSMA: f.forecast_value != null ? Number(f.forecast_value) : null,
-      };
-    })
-    .filter((f) => f.projectedSMA != null)
-    .sort((a, b) => monthIndex(a.month) - monthIndex(b.month));
-
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Analytics Dashboard</h2>
         <KPICards metrics={metrics} />
       </section>
 
       {hasData(state.data) ? (
-        <AnalyticsDashboard revenueData={revenueData} forecastData={forecastData} />
+        <DashboardCharts
+          revenueData={revenueData}
+          bookingStatus={bookingStatus}
+          productStatus={productStatus}
+        />
       ) : (
         <div className="w-full h-96 border border-gray-200 rounded-lg shadow-sm bg-white flex items-center justify-center">
           <p className="text-gray-500 font-medium text-lg">
@@ -185,12 +195,6 @@ const LiveAdminDashboard = () => {
           </p>
         </div>
       )}
-
-      <AIBusinessInsights />
-
-      <div className="flex justify-end">
-        <ReportExport revenueData={revenueData} forecastData={forecastData} />
-      </div>
     </div>
   );
 };

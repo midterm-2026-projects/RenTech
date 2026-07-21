@@ -74,7 +74,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
             {displayScore}%
             <br />
             <span className="text-sm text-gray-500">
-              AI-adjusted: {displayScore}%
+              Inventory health: {displayScore}%
             </span>
           </p>
         </div>
@@ -105,7 +105,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
       {/* PROMOTION ENGINE */}
       <div className="mt-6 p-4 border border-gray-200 rounded bg-yellow-50">
         <h3 className="font-semibold text-yellow-700 mb-2">
-          AI Promotion Recommendations
+          Promotion Recommendations
         </h3>
 
         <ul className="list-disc pl-5 space-y-1">

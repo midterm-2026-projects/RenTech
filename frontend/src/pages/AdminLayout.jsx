@@ -4,7 +4,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import Sidebar from '../components/Sidebar';
 import LiveAdminDashboard from '../components/LiveAdminDashboard';
 import InventoryManagement from '../components/InventoryManagement';
-import AIBusinessInsights from '../components/AIBusinessInsights';
+import AIIntelligenceView from '../components/AIIntelligenceView';
 import TransactionDashboard from '../components/TransactionDashboard';
 import AccountSettings from '../components/SystemSetting';
 import StaffManagement from '../components/StaffManagement';
@@ -64,7 +64,7 @@ const AdminContent = () => {
       case 'inventory':
         return <InventoryManagement />;
       case 'ai intelligence':
-        return <AIBusinessInsights />;
+        return <AIIntelligenceView />;
       case 'transactions':
         return (
           <div className="w-full">

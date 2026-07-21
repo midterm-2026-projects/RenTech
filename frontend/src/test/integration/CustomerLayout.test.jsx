@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import CustomerLayout from "../../pages/CustomerLayout";
 import * as customerService from "../../services/customerAssistantService";
+import * as Login from "../../components/Login";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
@@ -11,6 +12,7 @@ describe("CustomerLayout Component (Integration)", () => {
       'Mock reply for: "Show me gowns"'
     );
     vi.spyOn(window, "alert").mockImplementation(() => {});
+    vi.spyOn(Login, "clearSession").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -73,7 +75,8 @@ describe("CustomerLayout Component (Integration)", () => {
     const modalConfirmBtn = modalButtons[modalButtons.length - 1]; 
     await user.click(modalConfirmBtn);
 
-    expect(window.alert).toHaveBeenCalledWith("Signing out...");
+    expect(Login.clearSession).toHaveBeenCalled();
+    expect(window.alert).not.toHaveBeenCalled();
   });
 
 

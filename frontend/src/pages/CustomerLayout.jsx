@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LayoutGrid, Clock, LogOut, X } from "lucide-react";
 
 // FIXED: Adjusted paths to correctly look up one level into the components folder
@@ -8,8 +9,10 @@ import ProductCard from '../components/ProductCard.jsx';
 import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
 import Transaction from '../components/Transaction.jsx';
+import { clearSession } from '../components/Login.jsx';
 
 export default function CustomerLayout() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Collection");
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,7 +41,8 @@ export default function CustomerLayout() {
 
   const handleConfirmSignOut = () => {
     setShowSignOutModal(false);
-    alert("Signing out..."); 
+    clearSession();
+    navigate("/", { replace: true });
   };
 
   return (

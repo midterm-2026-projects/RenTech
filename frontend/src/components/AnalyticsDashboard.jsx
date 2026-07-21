@@ -1,7 +1,7 @@
-import { 
+import {
   AreaChart, Area,
-  LineChart, Line, 
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+  LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 // Acceptance Criteria: Hardcoded example data for Revenue

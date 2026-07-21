@@ -1,25 +1,21 @@
-import { DollarSign, Key, CalendarCheck, TrendingUp, Package, AlertCircle, BarChart3 } from 'lucide-react';
+import { DollarSign, Key, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
 
 const KPICards = ({ metrics = {} }) => {
   const data = {
     totalRevenue: metrics.totalRevenue || '₱0',
     activeRentals: metrics.activeRentals || '0',
-    reservations: metrics.reservations || '0',
     forecastRevenue: metrics.forecastRevenue || '₱0',
-    inventoryItems: metrics.inventoryItems || '0',
-    overdueReturns: metrics.overdueReturns || '0',
     utilization: metrics.utilization || '0%',
+    overdueReturns: metrics.overdueReturns || '0',
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       <Card title="Total Revenue" value={data.totalRevenue} Icon={DollarSign} />
-      <Card title="Active Rentals" value={data.activeRentals} Icon={Key} />
-      <Card title="Reservations" value={data.reservations} Icon={CalendarCheck} />
       <Card title="Forecast Revenue" value={data.forecastRevenue} Icon={TrendingUp} />
-      <Card title="Inventory Items" value={data.inventoryItems} Icon={Package} />
-      <Card title="Overdue Returns" value={data.overdueReturns} Icon={AlertCircle} />
+      <Card title="Active Rentals" value={data.activeRentals} Icon={Key} />
       <Card title="Utilization" value={data.utilization} Icon={BarChart3} />
+      <Card title="Overdue Returns" value={data.overdueReturns} Icon={AlertCircle} />
     </div>
   );
 };

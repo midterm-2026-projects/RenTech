@@ -7,6 +7,7 @@ import productService from '../../service/product.service.js';
 vi.mock('../../service/product.service.js', () => ({
   default: {
     getProducts: vi.fn(),
+    softDeleteProduct: vi.fn(),
   },
 }));
 
@@ -90,6 +91,36 @@ describe('Product Controller (Supertest)', () => {
       productService.getProducts.mockRejectedValue(new Error('boom'));
 
       const response = await request(app).get('/products');
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ status: 'error', message: 'boom' });
+    });
+  });
+
+  describe('PATCH /products/:id/soft-delete', () => {
+    it('returns a success envelope when the service succeeds', async () => {
+      productService.softDeleteProduct.mockResolvedValue({ data: { id: 1 }, error: null });
+
+      const response = await request(app).patch('/products/1/soft-delete');
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({ status: 'success', message: 'Product deleted' });
+      expect(productService.softDeleteProduct).toHaveBeenCalledWith('1');
+    });
+
+    it('returns 500 when the service reports an error', async () => {
+      productService.softDeleteProduct.mockResolvedValue({ data: null, error: new Error('nope') });
+
+      const response = await request(app).patch('/products/1/soft-delete');
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ status: 'error', message: 'nope' });
+    });
+
+    it('returns 500 when the service throws', async () => {
+      productService.softDeleteProduct.mockRejectedValue(new Error('boom'));
+
+      const response = await request(app).patch('/products/1/soft-delete');
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ status: 'error', message: 'boom' });

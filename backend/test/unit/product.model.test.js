@@ -22,6 +22,14 @@ function buildClient(rows) {
     select() {
       return builder;
     },
+    update(values) {
+      builder._mode = 'update';
+      builder._updated = values;
+      return builder;
+    },
+    single() {
+      return Promise.resolve({ data: { ...builder._updated, id: builder._targetId }, error: null });
+    },
     ilike(column, pattern) {
       const like = String(pattern).replace(/%/g, '').toLowerCase();
       working = working.filter((r) => String(r[column]).toLowerCase().includes(like));
@@ -29,6 +37,10 @@ function buildClient(rows) {
       return builder;
     },
     eq(column, value) {
+      if (builder._mode === 'update') {
+        builder._targetId = value;
+        return builder;
+      }
       working = working.filter((r) => r[column] === value);
       count = working.length;
       return builder;
@@ -126,5 +138,24 @@ describe('Product Model', () => {
 
     expect(result.data).toEqual([]);
     expect(result.total).toBe(0);
+  });
+
+  it('returns an error result when Supabase is not configured (soft delete)', async () => {
+    getSupabase.mockReturnValue(null);
+
+    const result = await productModel.softDelete(1);
+
+    expect(result.data).toBeNull();
+    expect(result.error).toBeInstanceOf(Error);
+  });
+
+  it('flags the inventory row as deleted by id', async () => {
+    getSupabase.mockReturnValue(buildClient(DATASET));
+
+    const result = await productModel.softDelete(3);
+
+    expect(result.error).toBeNull();
+    expect(result.data.id).toBe(3);
+    expect(result.data.is_deleted).toBe(true);
   });
 });
