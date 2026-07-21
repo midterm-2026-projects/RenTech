@@ -25,34 +25,71 @@ describe('AI controller (unit)', () => {
     vi.clearAllMocks();
   });
 
-  it('getAiInsights returns the operational status from the service', async () => {
-    const payload = { status: 'success', message: 'operational', timestamp: 't' };
-    aiService.getInsights.mockReturnValue(payload);
+  it('getAiInsights returns the result from the service with kpis', async () => {
+    const payload = { status: 'success', insights: ['insight1'], timestamp: 't' };
+    aiService.getInsights.mockResolvedValue(payload);
     const res = mockRes();
 
-    await getAiInsights({}, res);
+    await getAiInsights({ body: { kpis: { revenue: 1000 } } }, res);
 
-    expect(aiService.getInsights).toHaveBeenCalled();
+    expect(aiService.getInsights).toHaveBeenCalledWith({ revenue: 1000 });
     expect(res.json).toHaveBeenCalledWith(payload);
   });
 
-  it('postAiAssistant forwards the question to the service and echoes it', async () => {
-    const answer = { status: 'success', answer: 'Placeholder: Your question "hi" has been received.' };
-    aiService.postAssistant.mockReturnValue(answer);
+  it('getAiInsights handles empty body', async () => {
+    const payload = { status: 'success', insights: [] };
+    aiService.getInsights.mockResolvedValue(payload);
     const res = mockRes();
 
-    await postAiAssistant({ body: { question: 'hi' } }, res);
+    await getAiInsights({ body: {} }, res);
 
-    expect(aiService.postAssistant).toHaveBeenCalledWith('hi');
+    expect(aiService.getInsights).toHaveBeenCalledWith({});
+    expect(res.json).toHaveBeenCalledWith(payload);
+  });
+
+  it('getAiInsights handles service errors', async () => {
+    aiService.getInsights.mockRejectedValue(new Error('Service error'));
+    const res = mockRes();
+
+    await getAiInsights({ body: {} }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' })
+    );
+  });
+
+  it('postAiAssistant forwards the question and context to the service', async () => {
+    const answer = { status: 'success', answer: 'AI response' };
+    aiService.postAssistant.mockResolvedValue(answer);
+    const res = mockRes();
+
+    await postAiAssistant({ body: { question: 'hi', context: { revenue: 1000 } } }, res);
+
+    expect(aiService.postAssistant).toHaveBeenCalledWith('hi', { revenue: 1000 });
     expect(res.json).toHaveBeenCalledWith(answer);
   });
 
-  it('postAiAssistant passes along an empty/missing question', async () => {
-    aiService.postAssistant.mockReturnValue({ status: 'success' });
+  it('postAiAssistant handles missing context', async () => {
+    const answer = { status: 'success', answer: 'AI response' };
+    aiService.postAssistant.mockResolvedValue(answer);
     const res = mockRes();
 
-    await postAiAssistant({ body: {} }, res);
+    await postAiAssistant({ body: { question: 'test' } }, res);
 
-    expect(aiService.postAssistant).toHaveBeenCalledWith(undefined);
+    expect(aiService.postAssistant).toHaveBeenCalledWith('test', {});
+    expect(res.json).toHaveBeenCalledWith(answer);
+  });
+
+  it('postAiAssistant handles service errors', async () => {
+    aiService.postAssistant.mockRejectedValue(new Error('Service error'));
+    const res = mockRes();
+
+    await postAiAssistant({ body: { question: 'test' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' })
+    );
   });
 });
