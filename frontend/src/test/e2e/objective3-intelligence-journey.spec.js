@@ -26,11 +26,14 @@ test.describe('Objective 3 — System-Level Intelligence & Demand Forecasting', 
     await page.getByPlaceholder('Ask your AI assistant...').fill('Do you have any gowns for a wedding?');
     await page.getByRole('button', { name: 'Send' }).click();
 
-    // A reply (recommendation) or the AI-fallback copy must appear. The last assistant bubble is the reply, so it never matches the greeting.
+    // A reply (recommendation) or the AI-fallback copy must appear. The last
+    // assistant bubble is the reply, so it never matches the greeting. When the
+    // Gemini key is not configured the backend returns its friendly stylist
+    // fallback, which is still a valid assistant turn.
     await expect(
       page.locator('[data-testid="chat-messages"] div.bg-gray-200').last()
     ).toContainText(
-      /(recommend|unavailable|knowledge base|trouble connecting|help you with)/i,
+      /(recommend|unavailable|knowledge base|trouble connecting|help you with|stylist|ask me about)/i,
       { timeout: 20000 }
     );
 
