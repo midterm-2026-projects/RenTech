@@ -1,5 +1,26 @@
 // FAQ + product recommendation service for customers.
-// Replace with a real API call later.
+
+import api from './analyticsApiClient';
+
+const BASE_URL =
+  (import.meta.env && import.meta.env.VITE_API_BASE_URL) || 'http://localhost:5000';
+
+export async function postAssistantMessage(question, context = []) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/ai/assistant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, context }),
+    });
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}`);
+    }
+    const data = await response.json();
+    return data.answer || "I'm not sure how to respond to that.";
+  } catch {
+    return null;
+  }
+}
 
 // Sample product database (you can fetch this from an API or pass as prop)
 

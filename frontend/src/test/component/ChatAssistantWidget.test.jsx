@@ -5,12 +5,6 @@ import ChatAssistantWidget from "../../components/ChatAssistantWidget";
 import * as customerService from "../../services/customerAssistantService";
 
 describe("ChatAssistantWidget Component", () => {
-  beforeEach(() => {
-    vi.spyOn(customerService, "generateCustomerResponse").mockImplementation(
-      (input) => `Mock reply for: "${input}"`
-    );
-  });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -98,6 +92,9 @@ describe("ChatAssistantWidget Component", () => {
   });
 
   it("sends a message and shows a reply from the assistant", async () => {
+    vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
+      'Mock reply for: "What gowns do you have?"'
+    );
     const user = userEvent.setup();
     render(<ChatAssistantWidget />);
 
@@ -119,6 +116,7 @@ describe("ChatAssistantWidget Component", () => {
   });
 
   it("does not send a message when the input is empty", async () => {
+    vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue("reply");
     const user = userEvent.setup();
     render(<ChatAssistantWidget />);
 
@@ -129,10 +127,13 @@ describe("ChatAssistantWidget Component", () => {
 
     await user.click(screen.getByRole("button", { name: /send/i }));
 
-    expect(customerService.generateCustomerResponse).not.toHaveBeenCalled();
+    expect(customerService.postAssistantMessage).not.toHaveBeenCalled();
   });
 
   it("sends a message via Enter key", async () => {
+    vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
+      'Mock reply for: "Hello"'
+    );
     const user = userEvent.setup();
     render(<ChatAssistantWidget />);
 

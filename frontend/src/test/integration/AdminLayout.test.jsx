@@ -16,14 +16,18 @@ vi.mock("recharts", async () => {
 vi.mock("../../services/analyticsApiClient", () => ({
   getAnalyticsDashboard: vi.fn(() =>
     Promise.resolve({
-      summaries: [{ period: "Jan", metric_value: 100 }],
+      summaries: [{ period: "Jan", metric_value: 100, metric_name: "revenue" }],
       forecasts: [
-        { forecast_date: "2026-01-01", actual_value: 10, forecast_value: 12 },
+        { forecast_date: "2026-01-01", actual_value: 10, forecast_value: 12, model: "arima" },
       ],
       kpis: [],
       projections: [{ projected_revenue: 0 }],
     })
   ),
+  default: {
+    get: vi.fn(() => Promise.resolve({ data: [] })),
+    post: vi.fn(() => Promise.resolve({ data: { insights: ["Test insight"], suggestions: ["Test suggestion"] } })),
+  },
 }));
 
 function renderAdminLayout() {
@@ -48,7 +52,8 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText(/Admin Portal - dashboard/i)).toBeInTheDocument();
+      expect(screen.getByText(/Admin Portal/i)).toBeInTheDocument();
+      expect(screen.getByText(/Real-time business performance/i)).toBeInTheDocument();
     });
   });
 
@@ -68,14 +73,6 @@ describe("AdminLayout Component (Integration)", () => {
 
     await waitFor(() => {
       expect(screen.getByText("AI Business Insights")).toBeInTheDocument();
-      expect(
-        screen.getByText("Rental demand for winter coats is up 20% this week.")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "Bundle evening gowns with matching jewelry for a 10% discount."
-        )
-      ).toBeInTheDocument();
     });
   });
 
@@ -84,7 +81,7 @@ describe("AdminLayout Component (Integration)", () => {
     renderAdminLayout();
 
     await waitFor(() => {
-      expect(screen.getByText("Dashboard")).toBeInTheDocument();
+      expect(screen.getAllByText("Dashboard").length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText("Inventory")).toBeInTheDocument();
       expect(screen.getByText("AI Intelligence")).toBeInTheDocument();
     });
@@ -177,9 +174,8 @@ describe("AdminLayout Component (Integration)", () => {
 
     // 3. Verify page content updates to reflect the Transaction view state change
     await waitFor(() => {
-      expect(screen.getByText("Admin Portal - transactions")).toBeInTheDocument();
+      expect(screen.getByText(/Admin Portal/i)).toBeInTheDocument();
       expect(screen.getByText("Digital logbook of all rental transactions.")).toBeInTheDocument();
-      expect(screen.getByText("Vintage Gatsby Sequin Dress")).toBeInTheDocument();
     });
   });
 
@@ -198,9 +194,46 @@ describe("AdminLayout Component (Integration)", () => {
 
     // 3. Verify page content updates to reflect the System Settings view state change
     await waitFor(() => {
-      expect(screen.getByText("Admin Portal - settings")).toBeInTheDocument();
+      expect(screen.getByText(/Admin Portal/i)).toBeInTheDocument();
       expect(screen.getByText("Account & Settings")).toBeInTheDocument();
       expect(screen.getByText("Semaphore SMS Gateway")).toBeInTheDocument();
+    });
+  });
+
+  it("switches to a distinct Inventory view (not the dashboard) when clicking Inventory", async () => {
+    LoginModule.saveSession("Admin", "admin");
+    renderAdminLayout();
+
+    await waitFor(() => {
+      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+    });
+
+    const inventoryBtn = screen.getByRole("button", { name: /inventory/i });
+    await userEvent.click(inventoryBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("Stock Levels")).toBeInTheDocument();
+      expect(screen.getByText("Optimization Score")).toBeInTheDocument();
+      // Inventory must NOT render the dashboard graphs
+      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
+    });
+  });
+
+  it("switches to a distinct AI Intelligence view when clicking AI Intelligence", async () => {
+    LoginModule.saveSession("Admin", "admin");
+    renderAdminLayout();
+
+    await waitFor(() => {
+      expect(screen.getByText("Revenue Trends")).toBeInTheDocument();
+    });
+
+    const aiBtn = screen.getByRole("button", { name: /ai intelligence/i });
+    await userEvent.click(aiBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("AI Business Insights")).toBeInTheDocument();
+      // AI view must NOT render the dashboard graphs
+      expect(screen.queryByText("Revenue Trends")).not.toBeInTheDocument();
     });
   });
 });

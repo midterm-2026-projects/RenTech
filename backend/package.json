@@ -8,6 +8,7 @@
     "start": "node App.js",
     "dev": "nodemon App.js",
     "migrate": "node migrations/cli.js",
+    "seed": "node migrations/004_populate_data.js",
     "test": "vitest"
   },
   "keywords": [],
