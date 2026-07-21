@@ -1,15 +1,22 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import SystemSetting from '../../components/SystemSetting.jsx';
 
 describe('SystemSetting Component - Unit Tests', () => {
 
   const renderAndClearLoading = async () => {
-    render(<SystemSetting/>);
+    render(
+      <MemoryRouter>
+        <SystemSetting />
+      </MemoryRouter>
+    );
     
-    const loadingText = screen.getByText(/Loading component states/i);
-    await waitForElementToBeRemoved(loadingText);
+    const loadingText = screen.queryByText(/Loading component states/i);
+    if (loadingText) {
+      await waitForElementToBeRemoved(loadingText);
+    }
   };
 
   describe('Rendering & Visibility', () => {

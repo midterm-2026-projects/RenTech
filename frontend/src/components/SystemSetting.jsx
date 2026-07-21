@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { clearSession } from './Login';
 
 const MOCK_DB_INITIAL = {
   profile: { 
@@ -74,8 +76,11 @@ export default function AccountSettings() {
     triggerNotification("All templates reset to defaults.");
   };
 
+  const navigate = useNavigate();
+
   const handleSignOut = () => {
-    triggerNotification("Signing out user session state...");
+    clearSession();
+    navigate("/", { replace: true });
   };
 
   const triggerNotification = (msg) => {
