@@ -1,16 +1,17 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X } from "lucide-react";
 import { clearSession } from "./Login";
 
-export default function Sidebar({ currentTab, onTabChange }) {
+export default function Sidebar({ currentTab, onTabChange, userRole = "Admin" }) {
   const navigate = useNavigate();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+  const isAdmin = userRole === "Admin";
 
   const getButtonStyles = (tabName) => {
     const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer text-left text-xs";
     
-    // Check using lowercase strings to match the routing state
     if (currentTab === tabName) {
       return `${baseStyle} bg-rose-50/60 text-rose-500`;
     }
@@ -29,10 +30,9 @@ export default function Sidebar({ currentTab, onTabChange }) {
 
   return (
     <>
-      {/* Container structured to fill the layout frame */}
       <aside className="w-full bg-white text-gray-700 p-3 flex flex-col justify-between font-sans h-full">
         <div>
-          {/* Top Admin Profile Section */}
+          {/* Top Profile Section */}
           <div className="flex items-center space-x-2.5 mb-3">
             <div className="w-8 h-8 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50 shadow-sm">
               <div className="w-6 h-6 rounded-full bg-[#801818] flex items-center justify-center text-white text-[10px] font-serif">
@@ -40,14 +40,14 @@ export default function Sidebar({ currentTab, onTabChange }) {
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-gray-900 text-xs leading-none">Admin</h4>
-              <p className="text-[10px] text-gray-400 mt-0.5">Admin</p>
+              <h4 className="font-bold text-gray-900 text-xs leading-none">{userRole}</h4>
+              <p className="text-[10px] text-gray-400 mt-0.5">{userRole}</p>
             </div>
           </div>
 
           {/* Sidebar Navigation Buttons */}
           <nav className="space-y-0.5">
-            {/* Dashboard */}
+            {/* Dashboard - All roles */}
             <button 
               onClick={() => onTabChange("dashboard")}
               className={getButtonStyles("dashboard")}
@@ -56,7 +56,7 @@ export default function Sidebar({ currentTab, onTabChange }) {
               <span>Dashboard</span>
             </button>
 
-            {/* Inventory */}
+            {/* Inventory - All roles */}
             <button 
               onClick={() => onTabChange("inventory")}
               className={getButtonStyles("inventory")}
@@ -65,7 +65,7 @@ export default function Sidebar({ currentTab, onTabChange }) {
               <span>Inventory</span>
             </button>
 
-            {/* Transactions */}
+            {/* Transactions - All roles */}
             <button 
               onClick={() => onTabChange("transactions")}
               className={getButtonStyles("transactions")}
@@ -74,26 +74,30 @@ export default function Sidebar({ currentTab, onTabChange }) {
               <span>Transactions</span>
             </button>
 
-            {/* AI Intelligence */}
-            <button 
-              onClick={() => onTabChange("ai intelligence")}
-              className={`${getButtonStyles("ai intelligence")} justify-between`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <Sparkles className={getIconStyles("ai intelligence")} />
-                <span>AI Intelligence</span>
-              </div>
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            </button>
+            {/* AI Intelligence - Admin only */}
+            {isAdmin && (
+              <button 
+                onClick={() => onTabChange("ai intelligence")}
+                className={`${getButtonStyles("ai intelligence")} justify-between`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <Sparkles className={getIconStyles("ai intelligence")} />
+                  <span>AI Intelligence</span>
+                </div>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              </button>
+            )}
 
-            {/* System Settings */}
-            <button 
-              onClick={() => onTabChange("settings")}
-              className={getButtonStyles("settings")}
-            >
-              <Settings className={getIconStyles("settings")} />
-              <span>System Settings</span>
-            </button>
+            {/* System Settings - Admin only */}
+            {isAdmin && (
+              <button 
+                onClick={() => onTabChange("settings")}
+                className={getButtonStyles("settings")}
+              >
+                <Settings className={getIconStyles("settings")} />
+                <span>System Settings</span>
+              </button>
+            )}
           </nav>
         </div>
 
@@ -107,14 +111,13 @@ export default function Sidebar({ currentTab, onTabChange }) {
                 </div>
               </div>
               <div>
-                <h5 className="font-semibold text-gray-800 text-[10px] leading-none">Admin User</h5>
+                <h5 className="font-semibold text-gray-800 text-[10px] leading-none">{userRole} User</h5>
                 <p className="text-[8px] text-gray-400 mt-0.5">Online</p>
               </div>
             </div>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-200"></span>
           </div>
 
-          {/* Sign Out Action Button */}
           <button 
             onClick={() => setShowSignOutModal(true)}
             className="w-full flex items-center space-x-2 px-3 py-1 text-gray-500 hover:text-rose-500 font-medium text-xs transition cursor-pointer text-left"

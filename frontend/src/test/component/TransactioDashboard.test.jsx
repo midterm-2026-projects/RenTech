@@ -4,11 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const SEED = [
-  { id: "TX-1001", username: "ana rivera", itemName: "Vintage Gatsby Sequin Dress", date: "May 01, 2026", pricePerDay: 500, daysRented: 3, totalCost: 1500, status: "Active" },
-  { id: "TX-1002", username: "carlos mendez", itemName: "Barong Tagalog", date: "May 02, 2026", pricePerDay: 400, daysRented: 2, totalCost: 800, status: "Active" },
-  { id: "TX-1003", username: "liza santos", itemName: "Emerald Velvet Gown", date: "May 03, 2026", pricePerDay: 600, daysRented: 3, totalCost: 1800, status: "Active" },
-  { id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "May 04, 2026", pricePerDay: 700, daysRented: 2, totalCost: 1400, status: "Returned" },
-  { id: "TX-1005", username: "isabel garcia", itemName: "Champagne Silk Gown", date: "May 02, 2026", pricePerDay: 850, daysRented: 2, totalCost: 1700, status: "Active" },
+  { id: "TX-1001", username: "ana rivera", itemName: "Vintage Gatsby Sequin Dress", date: "May 01, 2026", totalCost: 1500, status: "Active" },
+  { id: "TX-1002", username: "carlos mendez", itemName: "Barong Tagalog", date: "May 02, 2026", totalCost: 800, status: "Active" },
+  { id: "TX-1003", username: "liza santos", itemName: "Emerald Velvet Gown", date: "May 03, 2026", totalCost: 1800, status: "Active" },
+  { id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "May 04, 2026", totalCost: 1400, status: "Returned" },
+  { id: "TX-1005", username: "isabel garcia", itemName: "Champagne Silk Gown", date: "May 02, 2026", totalCost: 1700, status: "Active" },
 ];
 
 vi.mock('../../services/inventoryApiClient', () => ({

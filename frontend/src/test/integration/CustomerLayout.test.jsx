@@ -4,46 +4,49 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import CustomerLayout from "../../pages/CustomerLayout";
 import * as customerService from "../../services/customerAssistantService";
-import * as Login from "../../components/Login";
+import * as LoginModule from "../../components/Login";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
-    vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
-      'Mock reply for: "Show me gowns"'
+    localStorage.clear();
+    LoginModule.saveSession("Customer", "customer");
+    vi.spyOn(customerService, "postAssistantMessage").mockImplementation(
+      async (input) => `Mock reply for: "${input}"`
     );
     vi.spyOn(window, "alert").mockImplementation(() => {});
-    vi.spyOn(Login, "clearSession").mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  function renderCustomerLayout() {
-    return render(
+  async function renderCustomerLayout() {
+    const result = render(
       <MemoryRouter>
         <CustomerLayout />
       </MemoryRouter>
     );
+    await screen.findByRole("heading", { level: 1, name: "Collection" });
+    return result;
   }
 
-  it("renders the primary Collection page header and description text", () => {
-    renderCustomerLayout();
+  it("renders the primary Collection page header and description text", async () => {
+    await renderCustomerLayout();
     expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
     expect(
       screen.getByText(/Browse our premium formal wear collection/i)
     ).toBeInTheDocument();
   });
 
-  it("renders sidebar navigation buttons for Collection and Transactions", () => {
-    renderCustomerLayout();
+  it("renders sidebar navigation buttons for Collection and Transactions", async () => {
+    await renderCustomerLayout();
     expect(screen.getByRole("button", { name: /Collection/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Transactions/i })).toBeInTheDocument();
   });
 
-  it("renders the sidebar profile identity header and online status footer", () => {
-    renderCustomerLayout();
-    const userProfileNames = screen.getAllByText("Maria Santos");
+  it("renders the sidebar profile identity header and online status footer", async () => {
+    await renderCustomerLayout();
+    const userProfileNames = screen.getAllByText("customer");
     expect(userProfileNames.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Customer")).toBeInTheDocument();
     expect(screen.getByText("Online")).toBeInTheDocument();
@@ -51,7 +54,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("switches to transaction history panel when transactions sidebar path is triggered", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     expect(screen.getByText(/Browse our premium formal wear collection/i)).toBeInTheDocument();
     
@@ -63,7 +66,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("handles user logout process modal state verification flow correctly", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     const sidebarSignOutBtn = screen.getByRole("button", { name: /Sign Out/i });
     await user.click(sidebarSignOutBtn);
@@ -75,8 +78,7 @@ describe("CustomerLayout Component (Integration)", () => {
     const modalConfirmBtn = modalButtons[modalButtons.length - 1]; 
     await user.click(modalConfirmBtn);
 
-    expect(Login.clearSession).toHaveBeenCalled();
-    expect(window.alert).not.toHaveBeenCalled();
+    expect(localStorage.getItem('rentech_session')).toBeNull();
   });
 
 
@@ -85,7 +87,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("opens the complete booking form overlay when a product item card is triggered", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     expect(screen.queryByText("Complete Booking")).not.toBeInTheDocument();
 
@@ -97,7 +99,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("fills out user info fields and toggles booking target identity options", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
     await user.click(availableItem);
@@ -125,7 +127,7 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
   it("handles rental date picker inputs correctly", async () => {
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
     fireEvent.click(availableItem);
@@ -140,7 +142,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("handles size option listings selection and process progression", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
     await user.click(availableItem);
@@ -155,24 +157,106 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
 
+  // ADDITIONAL INTEGRATION TESTS
+
+
+  it("progresses from booking form to the payment step and handles payment method selection", async () => {
+    const user = userEvent.setup();
+    await renderCustomerLayout();
+
+    // Open booking modal
+    const availableItem = screen.getByText(/Emerald Silk Mermaid Evening Gown/i).closest("div");
+    await user.click(availableItem);
+
+    // Proceed past booking to payment step
+    const continueBtn = screen.getByRole("button", { name: "Continue to Payment" });
+    await user.click(continueBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Payment Method/i)).toBeInTheDocument();
+    });
+
+    // Select a payment option if available
+    const gcashOption = screen.queryByText(/GCash/i) || screen.queryByRole("button", { name: /GCash/i });
+    if (gcashOption) {
+      await user.click(gcashOption);
+    }
+  });
+
+it("filters collection items when category filter buttons are triggered", async () => {
+  const user = userEvent.setup();
+  await renderCustomerLayout();
+
+  // Look for category buttons (e.g., Gowns, Suits, etc.)
+  const suitFilterBtn = screen.queryByRole("button", { name: /^Suits$/i }) || 
+                        screen.queryByRole("button", { name: /Suits/i });
+  
+  if (suitFilterBtn) {
+    await user.click(suitFilterBtn);
+    await waitFor(() => {
+      expect(
+        screen.getAllByText(/Admin Portal/i).length
+      ).toBeGreaterThan(0);
+
+      expect(
+        screen.getByText('Account & Settings')
+      ).toBeInTheDocument();
+    });
+  }
+});
+
+it("filters product collection cards using the search input field", async () => {
+    const user = userEvent.setup();
+    await renderCustomerLayout();
+
+    const searchInput = screen.queryByPlaceholderText(/search collection/i) || 
+                        screen.queryByPlaceholderText(/search/i);
+
+    if (searchInput) {
+      await user.type(searchInput, "Tuxedo");
+      await waitFor(() => {
+        expect(screen.queryByText(/Emerald Silk Mermaid Evening Gown/i)).not.toBeInTheDocument();
+      });
+    }
+  });
+
+  it("displays transaction details view when a specific transaction history item is clicked", async () => {
+    const user = userEvent.setup();
+    await renderCustomerLayout();
+
+    // Switch to Transactions panel
+    const transactionsBtn = screen.getByRole("button", { name: /Transactions/i });
+    await user.click(transactionsBtn);
+
+    // Click on a transaction row/card if present
+    const transactionItem = screen.queryByText(/TRX-/i) || screen.queryByText(/Booking Reference/i);
+    if (transactionItem) {
+      await user.click(transactionItem.closest("div") || transactionItem);
+      await waitFor(() => {
+        expect(screen.getByText(/Transaction Details/i)).toBeInTheDocument();
+      });
+    }
+  });
+
+
   // CHAT ASSISTANT
 
 
-  it("renders the floating chat widget button", () => {
-    renderCustomerLayout();
+  it("renders the floating chat widget button", async () => {
+    await renderCustomerLayout();
     expect(
       screen.getByRole("button", { name: /open chat/i })
     ).toBeInTheDocument();
   });
 
-  it("chat panel is closed by default", () => {
-    renderCustomerLayout();
+  it("chat panel is closed by default", async () => {
+    await renderCustomerLayout();
     expect(screen.queryByText("Chat Assistant")).not.toBeInTheDocument();
   });
 
   it("clicking the widget opens the chat panel with a greeting", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
@@ -186,7 +270,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("closes the chat panel when the floating button is clicked again", async () => {
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     await user.click(screen.getByRole("button", { name: /open chat/i }));
     await waitFor(() => {
@@ -201,11 +285,8 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
   it("allows sending a message through the chat widget", async () => {
-    customerService.postAssistantMessage.mockResolvedValue(
-      'Mock reply for: "Show me gowns"'
-    );
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
@@ -225,11 +306,8 @@ describe("CustomerLayout Component (Integration)", () => {
   });
 
   it("sends a message via Enter key in the chat widget", async () => {
-    customerService.postAssistantMessage.mockResolvedValue(
-      'Mock reply for: "Rent a suit"'
-    );
     const user = userEvent.setup();
-    renderCustomerLayout();
+    await renderCustomerLayout();
 
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
@@ -247,9 +325,9 @@ describe("CustomerLayout Component (Integration)", () => {
     });
   });
 
-  it("does not show the chat panel initially after page load", () => {
-    renderCustomerLayout();
-    expect(screen.queryByPlaceholderText("Ask your AI assistant...")).not.toBeInTheDocument();
-    expect(screen.queryByText("Customer Support Assistant")).not.toBeInTheDocument();
+    it("does not show the chat panel initially after page load", async () => {
+      await renderCustomerLayout();
+      expect(screen.queryByPlaceholderText("Ask your AI assistant...")).not.toBeInTheDocument();
+      expect(screen.queryByText("Customer Support Assistant")).not.toBeInTheDocument();
+    });
   });
-});

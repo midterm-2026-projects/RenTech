@@ -7,13 +7,16 @@ const MOCK_USERS = {
   customer: { password: 'customer', role: 'Customer' },
 };
 
+
 const SESSION_KEY = 'rentech_session';
 
-export function saveSession(role, username) {
+export function saveSession(role, username, token) {
   const session = {
     role,
     username,
-    token: btoa(`${username}:${role}:${Date.now()}`),
+    // Test and demo callers do not provide a server token. Keep those
+    // sessions usable by generating the same development token shape as the API.
+    token: token ?? btoa(`${username}:${role}`),
     issuedAt: Date.now(),
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -33,6 +36,8 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
+const API_BASE = 'http://localhost:5000/api';
+
 export default function Login({ onLogin, onBack }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -51,15 +56,44 @@ export default function Login({ onLogin, onBack }) {
     }
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const allUsers = { ...MOCK_USERS, ...extraUsers };
-    const user = allUsers[username.trim().toLowerCase()];
-    if (user && user.password === password) {
-      saveSession(user.role, username.trim().toLowerCase());
-      onLogin(user.role);
-    } else {
-      setError('Invalid username or password');
+    setError('');
+
+    const normalizedUsername = username.trim().toLowerCase();
+    const localUser = MOCK_USERS[normalizedUsername] || extraUsers[normalizedUsername];
+
+    // The credential hints displayed by this screen are local demo accounts.
+    // Resolve them immediately so the UI works without requiring a running API.
+    if (localUser) {
+      if (password !== localUser.password) {
+        setError('Invalid username or password');
+        return;
+      }
+
+      const token = btoa(`${normalizedUsername}:${localUser.role}`);
+      saveSession(localUser.role, normalizedUsername, token);
+      onLogin(localUser.role);
+      return;
+    }
+
+    // Give immediate feedback for an unknown account while still allowing the
+    // backend to authenticate users that are not part of the demo list.
+    setError('Invalid username or password');
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        return;
+      }
+      const data = await res.json();
+      saveSession(data.role, data.username, data.token);
+      onLogin(data.role);
+    } catch {
+      // The local demo login remains available when the API is offline.
     }
   };
 
@@ -79,7 +113,10 @@ export default function Login({ onLogin, onBack }) {
     }
     const newUser = { password: signupPassword, role: 'Customer' };
     setExtraUsers((prev) => ({ ...prev, [signupUsername]: newUser }));
-    saveSession('Customer', signupUsername);
+
+    // Local-only signup (no backend registration yet) — fabricate a dev token.
+    const token = btoa(`${signupUsername}:Customer`);
+    saveSession('Customer', signupUsername, token);
     onLogin('Customer');
   };
 
@@ -89,70 +126,109 @@ export default function Login({ onLogin, onBack }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fcfcfd]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+    <div
+      className="min-h-screen flex items-center justify-center bg-[#fcfcfd]"
+      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+    >
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm border border-gray-100/80">
+
         {onBack && (
-          <button onClick={() => { clearSession(); onBack(); }} className="text-xs text-[#bf4a53] font-semibold mb-4 block hover:underline">
+          <button
+            onClick={() => {
+              clearSession();
+              onBack();      
+            }}
+            className="text-xs text-[#bf4a53] font-semibold mb-4 block hover:underline"
+          >
             ← Back to Home
           </button>
         )}
 
         <div className="flex justify-center mb-6">
-          <img src="/RenTech.png" alt="RENTECH Logo" className="w-16 h-16" />
+          <img
+            src="/RenTech.png"
+            alt="RENTECH Logo"
+            className="w-16 h-16 md:w-16 md:h-16"
+          />
         </div>
 
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">{isSignup ? 'Create Account' : 'Welcome Back'}</h2>
-        <p className="text-center text-gray-500 text-sm mb-6">{isSignup ? 'Sign up for a RenTech account' : 'Sign in to your RenTech account'}</p>
+        <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
+          {isSignup ? 'Create Account' : 'Welcome Back'}
+        </h2>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          {isSignup
+            ? 'Sign up for a RenTech account'
+            : 'Sign in to your RenTech account'}
+        </p>
 
-        {/* --- SIGN UP FORM --- */}
-        {isSignup ? (
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Username</label>
-              <input type="text" required value={signupUsername} onChange={(e) => setSignupUsername(e.target.value)} className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:bg-white transition-all" />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Password</label>
-              <input type="password" required value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:bg-white transition-all" />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Confirm Password</label>
-              <input type="password" required value={signupConfirm} onChange={(e) => setSignupConfirm(e.target.value)} className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:bg-white transition-all" />
-            </div>
-            {error && <p className="text-red-500 text-xs font-semibold text-center">{error}</p>}
-            <button type="submit" className="w-full py-3 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors shadow-sm">Sign Up</button>
-          </form>
-        ) : (
-          /* --- LOGIN FORM --- */
+        {!isSignup && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Username</label>
-              <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:bg-white transition-all" placeholder="admin" />
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                Username
+              </label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:bg-white focus:border-gray-400 transition-all"
+                placeholder="admin"
+              />
             </div>
             <div>
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Password</label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                Password
+              </label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:bg-white transition-all pr-10" placeholder="••••••••" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-gray-50/50 border border-gray-200/80 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:bg-white focus:border-gray-400 transition-all pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                
                   {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
               </div>
             </div>
-            {error && <p className="text-red-500 text-xs font-semibold text-center">{error}</p>}
-            <button type="submit" className="w-full py-3 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors">Sign In</button>
+
+            {error && (
+              <p className="text-red-500 text-xs font-semibold text-center">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors shadow-sm shadow-gray-900/20"
+            >
+              Sign In
+            </button>
           </form>
         )}
 
-        <p className="text-center text-gray-500 text-xs mt-4">
+
+        <div className="text-center text-gray-500 text-xs mt-4">
           {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <button onClick={toggleMode} className="text-[#bf4a53] font-bold hover:underline cursor-pointer">
+          <button
+            type="button"
+            onClick={toggleMode}
+            className="text-[#bf4a53] font-bold hover:underline"
+          >
             {isSignup ? 'Sign In' : 'Sign Up'}
           </button>
-        </p>
+        </div>
 
         {!isSignup && (
           <p className="text-xs text-gray-400 text-center mt-4">
-            Demo credentials: <br /> admin / admin | staff / staff | customer / customer
+            Demo credentials: <br />
+            admin / admin &nbsp;|&nbsp; staff / staff &nbsp;|&nbsp; customer / customer
           </p>
         )}
       </div>

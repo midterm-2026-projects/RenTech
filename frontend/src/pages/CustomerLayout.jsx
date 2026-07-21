@@ -1,27 +1,60 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutGrid, Clock, LogOut, X } from "lucide-react";
+import ProtectedRoute from '../components/ProtectedRoute';
+import { getSession, clearSession } from '../components/Login';
 
-// FIXED: Adjusted paths to correctly look up one level into the components folder
-import Catalog from '../components/Catalog.jsx';
 import SearchAndFilter from '../components/SearchAndFilter.jsx';
 import ProductCard from '../components/ProductCard.jsx';
 import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
 import Transaction from '../components/Transaction.jsx';
-import { clearSession } from '../components/Login.jsx';
 
-export default function CustomerLayout() {
+const INITIAL_PRODUCTS = [
+  {
+    id: 'BK-839260',
+    name: "Emerald Silk Mermaid Evening Gown",
+    price: 4500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=500&auto=format&fit=crop&q=80", 
+    status: "Available"
+  },
+  {
+    id: 'BK-112233',
+    name: "A-Line Ivory Lace Wedding Gown",
+    price: 7500,
+    category: "GOWN",
+    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?w=500&auto=format&fit=crop&q=80",
+    status: "Rented"
+  },
+  {
+    id: 'BK-445566',
+    name: "Midnight Black Peak Lapel Tuxedo",
+    price: 3800,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1593030103066-0093718efeb9?w=500&auto=format&fit=crop&q=80",
+    status: "Maintenance"
+  },
+  {
+    id: 'BK-778899',
+    name: "Modern Charcoal Grey Slim Suit",
+    price: 3200,
+    category: "SUIT",
+    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80",
+    status: "Overdue"
+  }
+];
+
+function CustomerContent() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Collection");
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const session = getSession();
 
-  const productsList = ProductCard.products || [];
-
-  const filteredProducts = productsList.filter((product) => {
+  const filteredProducts = INITIAL_PRODUCTS.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedCategory === "All" || product.status === selectedCategory;
     return matchesSearch && matchesStatus;
@@ -58,8 +91,8 @@ export default function CustomerLayout() {
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-gray-900 text-xs leading-none">Maria Santos</h4>
-              <p className="text-[10px] text-gray-400 mt-0.5">Customer</p>
+              <h4 className="font-bold text-gray-900 text-xs leading-none capitalize">{session?.username || 'Customer'}</h4>
+              <p className="text-[10px] text-gray-400 mt-0.5">{session?.role || 'Customer'}</p>
             </div>
           </div>
 
@@ -93,7 +126,7 @@ export default function CustomerLayout() {
                 </div>
               </div>
               <div>
-                <h5 className="font-semibold text-gray-800 text-[10px] leading-none">Maria Santos</h5>
+                <h5 className="font-semibold text-gray-800 text-[10px] leading-none capitalize">{session?.username || 'Customer'}</h5>
                 <p className="text-[8px] text-gray-400 mt-0.5">Online</p>
               </div>
             </div>
@@ -113,17 +146,13 @@ export default function CustomerLayout() {
       {/* Main Container Viewport Panel Frame */}
       <div className="flex-1 pl-56">
         <div className="p-6 lg:p-8 max-w-[1400px]">
-          
-          {/* SWITCH RENDERING SYSTEM BASED ON ACTIVETAB */}
           {activeTab === "Collection" ? (
             <>
-              {/* Header Content Alignment Admin */}
               <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Collection</h1>
                 <p className="text-xs text-gray-500 mt-0.5">Browse our premium formal wear collection.</p>
               </div>
 
-              {/* Controls Filter Elements Card Frame */}
               <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm mb-6">
                 <SearchAndFilter
                   searchTerm={searchTerm}
@@ -133,7 +162,6 @@ export default function CustomerLayout() {
                 />
               </div>
 
-              {/* Product Grid */}
               {filteredProducts.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-xl border border-gray-100 text-sm text-gray-400 font-medium">
                   No items match your search filters.
@@ -141,8 +169,8 @@ export default function CustomerLayout() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                   {filteredProducts.map((product) => (
-                    <div 
-                      key={product.id} 
+                    <div
+                      key={product.id}
                       onClick={() => product.status === 'Available' && setIsModalOpen(true)}
                       className="transition hover:-translate-y-0.5 duration-200"
                       style={{ cursor: product.status === 'Available' ? 'pointer' : 'default' }}
@@ -154,14 +182,13 @@ export default function CustomerLayout() {
               )}
             </>
           ) : (
-            <Transaction /> 
+            <Transaction />
           )}
-
         </div>
       </div>
 
-      {/* Widgets & Overlays */}
-      <ChatAssistantWidget products={productsList} />
+      {/* Embedded Widgets & Overlays */}
+      <ChatAssistantWidget products={INITIAL_PRODUCTS} />
 
       {isModalOpen && (
         <BookingForm onClose={() => setIsModalOpen(false)} />
@@ -202,3 +229,12 @@ export default function CustomerLayout() {
     </div>
   );
 }
+
+// WRAPPED in ProtectedRoute so only signed-in users (any role) reach the customer portal.
+const CustomerLayout = () => (
+  <ProtectedRoute allowedRoles={['Customer', 'Staff', 'Admin']}>
+    <CustomerContent />
+  </ProtectedRoute>
+);
+
+export default CustomerLayout;

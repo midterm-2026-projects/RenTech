@@ -1,30 +1,34 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
+
 import '@testing-library/jest-dom';
 import SystemSetting from '../../components/SystemSetting.jsx';
 
 describe('SystemSetting Component - Unit Tests', () => {
-
   const renderAndClearLoading = async () => {
-    render(
-      <MemoryRouter>
-        <SystemSetting />
-      </MemoryRouter>
-    );
-    
-    const loadingText = screen.queryByText(/Loading component states/i);
-    if (loadingText) {
-      await waitForElementToBeRemoved(loadingText);
-    }
+    render(<SystemSetting />);
+
+    const loadingText = screen.getByText(/Loading component states/i);
+
+    await waitForElementToBeRemoved(loadingText);
   };
 
   describe('Rendering & Visibility', () => {
     test('renders the main layout, header elements, and title banner', async () => {
       await renderAndClearLoading();
 
-      expect(screen.getByText('Account & Settings')).toBeInTheDocument();
-      expect(screen.getByText('Manage preferences and system notifications.')).toBeInTheDocument();
+      expect(screen.getByText('Admin Portal')).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          'Manage preferences and system notifications.'
+        )
+      ).toBeInTheDocument();
     });
 
     test('renders profile info card with correct user information', async () => {
@@ -38,18 +42,37 @@ describe('SystemSetting Component - Unit Tests', () => {
     test('renders system integration statuses', async () => {
       await renderAndClearLoading();
 
-      expect(screen.getByText('Semaphore SMS Gateway')).toBeInTheDocument();
-      expect(screen.getByText('PayMongo Payments')).toBeInTheDocument();
-      expect(screen.getAllByText('Connected').length).toBeGreaterThan(0);
+      expect(
+        screen.getByText('Semaphore SMS Gateway')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText('PayMongo Payments')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getAllByText('Connected').length
+      ).toBeGreaterThan(0);
     });
 
     test('renders all expected SMS template sub-cards initially', async () => {
       await renderAndClearLoading();
 
-      expect(screen.getByText('Booking Confirmation')).toBeInTheDocument();
-      expect(screen.getByText('Return Reminder')).toBeInTheDocument();
-      expect(screen.getByText('Overdue Alert')).toBeInTheDocument();
-      expect(screen.getByText('Payment Confirmation')).toBeInTheDocument();
+      expect(
+        screen.getByText('Booking Confirmation')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText('Return Reminder')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText('Overdue Alert')
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText('Payment Confirmation')
+      ).toBeInTheDocument();
     });
   });
 
@@ -58,73 +81,154 @@ describe('SystemSetting Component - Unit Tests', () => {
       await renderAndClearLoading();
 
       const editButtons = screen.getAllByText('Edit');
+
       fireEvent.click(editButtons[0]);
 
-      const textarea = screen.getByRole('textbox');
+      const textareas = screen.getAllByRole('textbox');
+
+      const textarea = textareas.find(
+        (element) => element.tagName.toLowerCase() === 'textarea'
+      );
+
       expect(textarea).toBeInTheDocument();
 
-      fireEvent.change(textarea, { target: { value: 'New updated booking text template alert!' } });
+      fireEvent.change(textarea, {
+        target: {
+          value: 'New updated booking text template alert!',
+        },
+      });
 
       const saveButton = screen.getByText('Save');
+
       fireEvent.click(saveButton);
 
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-      expect(screen.getByText('New updated booking text template alert!')).toBeInTheDocument();
-      expect(screen.getByText('Template modified successfully (Mock Save)!')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue(
+        'New updated booking text template alert!'
+      )).not.toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          'New updated booking text template alert!'
+        )
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          'Template modified successfully (Mock Save)!'
+        )
+      ).toBeInTheDocument();
     });
 
     test('allows a user to cancel an active edit without mutating current state', async () => {
       await renderAndClearLoading();
 
-      const originalText = screen.getByText(/Hi {customerName}, your booking for/i).textContent;
+      const originalText = screen.getByText(
+        /Hi {customerName}, your booking for/i
+      ).textContent;
 
       const editButtons = screen.getAllByText('Edit');
+
       fireEvent.click(editButtons[0]);
 
-      const textarea = screen.getByRole('textbox');
-      fireEvent.change(textarea, { target: { value: 'Spam text configuration change request.' } });
+      const textareas = screen.getAllByRole('textbox');
+
+      const textarea = textareas.find(
+        (element) => element.tagName.toLowerCase() === 'textarea'
+      );
+
+      fireEvent.change(textarea, {
+        target: {
+          value: 'Spam text configuration change request.',
+        },
+      });
 
       const cancelButton = screen.getByText('Cancel');
+
       fireEvent.click(cancelButton);
 
-      expect(screen.getByText(originalText)).toBeInTheDocument();
+      expect(
+        screen.getByText(originalText)
+      ).toBeInTheDocument();
     });
 
     test('does not save template changes if text area is cleared or purely whitespace', async () => {
       await renderAndClearLoading();
 
       const editButtons = screen.getAllByText('Edit');
+
       fireEvent.click(editButtons[0]);
 
-      const textarea = screen.getByRole('textbox');
-      fireEvent.change(textarea, { target: { value: '   ' } });
+      const textareas = screen.getAllByRole('textbox');
+
+      const textarea = textareas.find(
+        (element) => element.tagName.toLowerCase() === 'textarea'
+      );
+
+      fireEvent.change(textarea, {
+        target: {
+          value: '   ',
+        },
+      });
 
       const saveButton = screen.getByText('Save');
+
       fireEvent.click(saveButton);
 
-      expect(screen.getByText('Template content cannot be blank or empty.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Template content cannot be blank or empty.'
+        )
+      ).toBeInTheDocument();
     });
 
     test('resets an individual template card back to default successfully', async () => {
       await renderAndClearLoading();
 
-      fireEvent.click(screen.getAllByText('Edit')[0]);
-      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Temporary text' } });
-      fireEvent.click(screen.getByText('Save'));
+      fireEvent.click(
+        screen.getAllByText('Edit')[0]
+      );
+
+      const textareas = screen.getAllByRole('textbox');
+
+      const textarea = textareas.find(
+        (element) => element.tagName.toLowerCase() === 'textarea'
+      );
+
+      fireEvent.change(textarea, {
+        target: {
+          value: 'Temporary text',
+        },
+      });
+
+      fireEvent.click(
+        screen.getByText('Save')
+      );
 
       const resetButtons = screen.getAllByText('Reset');
+
       fireEvent.click(resetButtons[0]);
 
-      expect(screen.getByText('Template reverted to system default.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Template reverted to system default.'
+        )
+      ).toBeInTheDocument();
     });
 
     test('resets all templates simultaneously via global reset CTA link', async () => {
       await renderAndClearLoading();
 
-      const globalResetBtn = screen.getByText('Reset all templates to defaults');
+      const globalResetBtn = screen.getByText(
+        'Reset all templates to defaults'
+      );
+
       fireEvent.click(globalResetBtn);
 
-      expect(screen.getByText('All templates reset to defaults.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'All templates reset to defaults.'
+        )
+      ).toBeInTheDocument();
     });
   });
 });

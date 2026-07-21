@@ -30,7 +30,7 @@ describe('Transaction Component', () => {
     render(<Transaction />);
     const user = userEvent.setup();
     
-    const searchInput = screen.getByPlaceholderText(/search by id, customer, or item/i);
+    const searchInput = screen.getByPlaceholderText(/search by id or item/i);
     
     
     await user.type(searchInput, 'Crimson');
@@ -47,7 +47,7 @@ describe('Transaction Component', () => {
     render(<Transaction />);
     const user = userEvent.setup();
     
-    const searchInput = screen.getByPlaceholderText(/search by id, customer, or item/i);
+    const searchInput = screen.getByPlaceholderText(/search by id or item/i);
     
     
     await user.type(searchInput, 'tx-1023');
@@ -64,7 +64,7 @@ describe('Transaction Component', () => {
     render(<Transaction />);
     const user = userEvent.setup();
     
-    const searchInput = screen.getByPlaceholderText(/search by id, customer, or item/i);
+    const searchInput = screen.getByPlaceholderText(/search by id or item/i);
     
     
     await user.type(searchInput, 'Non-existent Item');
