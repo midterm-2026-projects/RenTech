@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import Signup from "../../components/SignUp.jsx";
 
@@ -6,17 +6,11 @@ describe("RenTech Sign Up Test Suite", () => {
   const mockOnLogin = vi.fn();
   const mockOnBack = vi.fn();
   const mockOnNavigateToLogin = vi.fn();
-  let extraUsers;
-  let mockSetExtraUsers;
 
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    extraUsers = {};
-    mockSetExtraUsers = vi.fn((updater) => {
-      extraUsers =
-        typeof updater === "function" ? updater(extraUsers) : updater;
-    });
+    global.fetch = vi.fn();
   });
 
   afterAll(() => {
@@ -29,8 +23,6 @@ describe("RenTech Sign Up Test Suite", () => {
         onLogin={mockOnLogin}
         onBack={mockOnBack}
         onNavigateToLogin={mockOnNavigateToLogin}
-        extraUsers={extraUsers}
-        setExtraUsers={mockSetExtraUsers}
         {...overrides}
       />
     );
@@ -53,125 +45,135 @@ describe("RenTech Sign Up Test Suite", () => {
     return { usernameInput, passwordInput, confirmInput };
   };
 
-  const submitForm = () => {
-    const registerButton = screen.getByRole("button", { name: /^register$/i });
-    fireEvent.submit(registerButton.closest("form"));
+  const submitForm = async () => {
+    const btn = await screen.findByRole("button", { name: /register/i });
+    fireEvent.submit(btn.closest("form"));
+    await waitFor(() => {});
+  };
+
+  const mockApi = (status, json) => {
+    global.fetch.mockResolvedValue({
+      ok: status < 400,
+      json: vi.fn().mockResolvedValue(json),
+    });
   };
 
   describe("Required Field Validation", () => {
-    it("should display 'Please fill in all fields' if the username is left empty", () => {
+    it("should display 'Please fill in all fields' if the username is left empty", async () => {
       renderSignup();
       fillForm({ username: "", password: "password123", confirm: "password123" });
-      submitForm();
+      await submitForm();
 
       expect(mockOnLogin).not.toHaveBeenCalled();
       expect(screen.getByText("Please fill in all fields")).toBeTruthy();
     });
 
-    it("should display 'Please fill in all fields' if the password is left empty", () => {
+    it("should display 'Please fill in all fields' if the password is left empty", async () => {
       renderSignup();
       fillForm({ username: "newuser", password: "", confirm: "password123" });
-      submitForm();
+      await submitForm();
 
       expect(mockOnLogin).not.toHaveBeenCalled();
       expect(screen.getByText("Please fill in all fields")).toBeTruthy();
     });
 
-    it("should display 'Please fill in all fields' if the confirm password is left empty", () => {
+    it("should display 'Please fill in all fields' if the confirm password is left empty", async () => {
       renderSignup();
       fillForm({ username: "newuser", password: "password123", confirm: "" });
-      submitForm();
+      await submitForm();
 
       expect(mockOnLogin).not.toHaveBeenCalled();
       expect(screen.getByText("Please fill in all fields")).toBeTruthy();
     });
 
-    it("should display 'Passwords do not match' if password and confirm password differ", () => {
+    it("should display 'Passwords do not match' if password and confirm password differ", async () => {
       renderSignup();
       fillForm({
         username: "bob",
         password: "password123",
         confirm: "differentPassword",
       });
-      submitForm();
+      await submitForm();
 
       expect(mockOnLogin).not.toHaveBeenCalled();
       expect(screen.getByText("Passwords do not match")).toBeTruthy();
     });
 
-    it("should display 'Username already exists' for a built-in MOCK_USERS username", () => {
+    it("should show server error if signup fails", async () => {
+      mockApi(400, { success: false, message: 'Username already exists' });
       renderSignup();
       fillForm({ username: "admin", password: "admin", confirm: "admin" });
-      submitForm();
+      await submitForm();
 
+      await waitFor(() => {
+        expect(screen.getByText("Username already exists")).toBeTruthy();
+      });
       expect(mockOnLogin).not.toHaveBeenCalled();
-      expect(screen.getByText("Username already exists")).toBeTruthy();
-    });
-
-    it("should display 'Username already exists' for a username already present in extraUsers", () => {
-      extraUsers = { existinguser: { password: "pw123", role: "Customer" } };
-      renderSignup();
-      fillForm({ username: "existinguser", password: "newpass", confirm: "newpass" });
-      submitForm();
-
-      expect(mockOnLogin).not.toHaveBeenCalled();
-      expect(screen.getByText("Username already exists")).toBeTruthy();
-    });
-
-    it("should treat usernames as case-insensitive when checking duplicates", () => {
-      renderSignup();
-      fillForm({ username: "  Admin  ", password: "admin", confirm: "admin" });
-      submitForm();
-
-      expect(mockOnLogin).not.toHaveBeenCalled();
-      expect(screen.getByText("Username already exists")).toBeTruthy();
     });
   });
 
   describe("Successful Registration & Default Role Assignment", () => {
-    it("should register a new user successfully and assign the default 'Customer' role", () => {
+    it("should register a new user successfully and assign the default 'Customer' role", async () => {
+      mockApi(201, { success: true, data: { username: 'alice', role: 'Customer' } });
       renderSignup();
       fillForm({ username: "alice", password: "password123", confirm: "password123" });
-      submitForm();
+      await submitForm();
 
-      expect(mockOnLogin).toHaveBeenCalledTimes(1);
-      expect(mockOnLogin).toHaveBeenCalledWith("Customer");
+      await waitFor(() => {
+        expect(mockOnLogin).toHaveBeenCalledTimes(1);
+        expect(mockOnLogin).toHaveBeenCalledWith("Customer");
+      });
     });
 
-    it("should normalize the username (trim + lowercase) before registering", () => {
+    it("should normalize the username (trim + lowercase) before calling the API", async () => {
+      let sentBody;
+      global.fetch.mockImplementation(async (url, opts) => {
+        sentBody = JSON.parse(opts.body);
+        return { ok: true, json: vi.fn().mockResolvedValue({ success: true, data: { username: 'alice', role: 'Customer' } }) };
+      });
       renderSignup();
       fillForm({ username: "  AlicE  ", password: "password123", confirm: "password123" });
-      submitForm();
+      await submitForm();
 
-      expect(mockSetExtraUsers).toHaveBeenCalledTimes(1);
-      expect(extraUsers).toHaveProperty("alice");
-      expect(extraUsers.alice).toEqual({ password: "password123", role: "Customer" });
+      await waitFor(() => {
+        expect(sentBody.username).toBe('alice');
+        expect(mockOnLogin).toHaveBeenCalledWith("Customer");
+      });
     });
 
-    it("should persist a session to localStorage with the default 'Customer' role on successful registration", () => {
+    it("should persist a session to localStorage with the default 'Customer' role on successful registration", async () => {
+      mockApi(201, { success: true, data: { username: 'charlie', role: 'Customer' } });
       renderSignup();
       fillForm({ username: "charlie", password: "securePass1", confirm: "securePass1" });
-      submitForm();
+      await submitForm();
 
-      const savedSession = JSON.parse(localStorage.getItem("rentech_session"));
-      expect(savedSession).not.toBeNull();
-      expect(savedSession.username).toBe("charlie");
-      expect(savedSession.role).toBe("Customer");
-      expect(savedSession.token).toBeDefined();
+      await waitFor(() => {
+        const savedSession = JSON.parse(localStorage.getItem("rentech_session"));
+        expect(savedSession).not.toBeNull();
+        expect(savedSession.username).toBe("charlie");
+        expect(savedSession.role).toBe("Customer");
+        expect(savedSession.token).toBeDefined();
+      });
     });
 
-    it("should clear any previous error message once registration succeeds", () => {
+    it("should clear any previous error message once registration succeeds", async () => {
+      mockApi(400, { success: false, message: 'Username already exists' });
       renderSignup();
 
-      fillForm({ username: "", password: "x", confirm: "x" });
-      submitForm();
-      expect(screen.getByText("Please fill in all fields")).toBeTruthy();
+      fillForm({ username: "admin", password: "x", confirm: "x" });
+      await submitForm();
+      await waitFor(() => {
+        expect(screen.getByText("Username already exists")).toBeTruthy();
+      });
 
+      mockApi(201, { success: true, data: { username: 'dana', role: 'Customer' } });
       fillForm({ username: "dana", password: "validPass1", confirm: "validPass1" });
-      submitForm();
+      await submitForm();
 
-      expect(screen.queryByText("Please fill in all fields")).toBeNull();
-      expect(mockOnLogin).toHaveBeenCalledWith("Customer");
+      await waitFor(() => {
+        expect(screen.queryByText("Username already exists")).toBeNull();
+        expect(mockOnLogin).toHaveBeenCalledWith("Customer");
+      });
     });
   });
 

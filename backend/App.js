@@ -14,7 +14,7 @@ import { registerProductRoutes } from './route/productRoute.js';
 import { registerHealthRoutes } from './route/healthRoute.js';
 import { requestLogger, errorLogger } from './middleware/requestLogger.js';
 import analyticsModel from './model/analytics.model.js';
-import { register, login } from './controller/loginController.js';
+import { register, login, signup, signin } from './controller/loginController.js';
 import { getRentalHistory, getTransactionSummary, calculateTransactionCosts } from './service/transactionMonitoring.service.js';
 import { getTemplates, updateTemplate, resetTemplate, resetAllTemplates } from './service/SystemSetting.service.js';
 import { getStaffList, addStaff, removeStaff } from './service/staffManagement.service.js';
@@ -179,6 +179,8 @@ transactionRoutes.get('/transactions/costs', async (req, res) => {
 // ====================
 loginRoutes.post('/register', register);
 loginRoutes.post('/login', login);
+loginRoutes.post('/signup', signup);
+loginRoutes.post('/signin', signin);
 
 // ====================
 // Settings/Template Endpoints

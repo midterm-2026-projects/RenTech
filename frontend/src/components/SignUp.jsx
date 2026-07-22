@@ -1,12 +1,8 @@
 import { useState } from 'react';
 
-const MOCK_USERS = {
-  admin: { password: 'admin', role: 'Admin' },
-  staff: { password: 'staff', role: 'Staff' },
-  customer: { password: 'customer', role: 'Customer' },
-};
-
 const SESSION_KEY = 'rentech_session';
+
+const API = 'http://localhost:5000/api/auth';
 
 function saveSession(role, username) {
   const session = {
@@ -19,13 +15,14 @@ function saveSession(role, username) {
   return session;
 }
 
-export default function Signup({ onLogin, onBack, onNavigateToLogin, extraUsers = {}, setExtraUsers }) {
+export default function Signup({ onLogin, onBack, onNavigateToLogin }) {
   const [signupUsername, setSignupUsername] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
     const formattedUsername = signupUsername.trim().toLowerCase();
@@ -38,16 +35,25 @@ export default function Signup({ onLogin, onBack, onNavigateToLogin, extraUsers 
       setError('Passwords do not match');
       return;
     }
-    if (MOCK_USERS[formattedUsername] || extraUsers[formattedUsername]) {
-      setError('Username already exists');
-      return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: formattedUsername, password: signupPassword }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.message || 'Signup failed');
+        return;
+      }
+      saveSession('Customer', formattedUsername);
+      onLogin('Customer');
+    } catch {
+      setError('Could not connect to server');
+    } finally {
+      setLoading(false);
     }
-
-    const newUser = { password: signupPassword, role: 'Customer' };
-    setExtraUsers((prev) => ({ ...prev, [formattedUsername]: newUser }));
-
-    saveSession('Customer', formattedUsername);
-    onLogin('Customer');
   };
 
   return (
@@ -122,9 +128,10 @@ export default function Signup({ onLogin, onBack, onNavigateToLogin, extraUsers 
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#bf4a53] text-white font-semibold rounded-full hover:bg-[#a63f47] transition-colors shadow-sm"
+            disabled={loading}
+            className="w-full py-3 bg-[#bf4a53] text-white font-semibold rounded-full hover:bg-[#a63f47] transition-colors shadow-sm disabled:opacity-50"
           >
-            Register
+            {loading ? 'Creating account...' : 'Register'}
           </button>
         </form>
 

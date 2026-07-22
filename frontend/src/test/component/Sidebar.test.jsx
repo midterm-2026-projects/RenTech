@@ -25,7 +25,7 @@ describe("Sidebar Layout and Interactions", () => {
     const adminElements = screen.getAllByText("Admin");
     expect(adminElements.length).toBeGreaterThan(0);
 
-    expect(screen.getByText("Admin User")).toBeInTheDocument();
+    expect(screen.getByText("Administrator")).toBeInTheDocument();
   });
 
   it("renders all core menu option buttons", () => {

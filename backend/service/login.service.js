@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { getSupabase } from '../config/supabaseClient.js';
 
 const mockUsers = [
@@ -13,7 +14,7 @@ export const registerUser = async (email, password, username) => {
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username: username } } // Ensure this matches trigger expectation
+        options: { data: { username: username } }
     });
     if (error) throw error;
     return data;
@@ -31,35 +32,50 @@ export const loginUser = async (email, password) => {
 };
 
 export const authenticateUser = async (username, password) => {
-    const user = mockUsers.find(
-        (item) => item.username === username && item.password === password,
-    );
-
-    if (!user) return null;
-
-    return {
-        username: user.username,
-        role: user.role,
-    };
+    const mock = mockUsers.find((u) => u.username === username);
+    if (mock) {
+        if (mock.password !== password) return null;
+        return { username: mock.username, role: mock.role };
+    }
+    const supabase = getSupabase();
+    if (supabase) {
+        const { data, error } = await supabase
+            .from('local_users')
+            .select('username, password_hash, role')
+            .eq('username', username)
+            .maybeSingle();
+        if (!error && data) {
+            const match = await bcrypt.compare(password, data.password_hash);
+            if (!match) return null;
+            return { username: data.username, role: data.role };
+        }
+    }
+    return null;
 };
 
 export const registerNewCustomer = async (username, password) => {
-    const existingUser = mockUsers.find((item) => item.username === username);
+    const mock = mockUsers.find((u) => u.username === username);
+    if (mock) return null;
 
-    if (existingUser) return null;
+    const supabase = getSupabase();
+    if (!supabase) {
+        throw new Error('Database not configured');
+    }
 
-    const newUser = {
-        username,
-        password,
-        role: 'Customer',
-    };
+    const { data: existing } = await supabase
+        .from('local_users')
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+    if (existing) return null;
 
-    mockUsers.push(newUser);
+    const password_hash = await bcrypt.hash(password, 10);
+    const { error } = await supabase
+        .from('local_users')
+        .insert({ username, password_hash, role: 'Customer' });
+    if (error) throw new Error(error.message);
 
-    return {
-        username: newUser.username,
-        role: newUser.role,
-    };
+    return { username, role: 'Customer' };
 };
 
 export const verifyRolePermission = (role, allowedRoles) => {
@@ -75,14 +91,22 @@ export const assignUserRole = async (username, role, assignedByRole) => {
         throw new Error('Invalid role specified');
     }
 
-    const user = mockUsers.find((item) => item.username === username);
+    const mock = mockUsers.find((u) => u.username === username);
+    if (mock) {
+        mock.role = role;
+        return { username: mock.username, role: mock.role };
+    }
 
-    if (!user) return null;
+    const supabase = getSupabase();
+    if (supabase) {
+        const { error } = await supabase
+            .from('local_users')
+            .update({ role })
+            .eq('username', username);
+        if (!error) {
+            return { username, role };
+        }
+    }
 
-    user.role = role;
-
-    return {
-        username: user.username,
-        role: user.role,
-    };
+    return null;
 };

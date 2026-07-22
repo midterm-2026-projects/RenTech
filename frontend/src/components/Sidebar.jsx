@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X, User, ShoppingBag } from "lucide-react";
-import { clearSession } from "./Login";
+import { clearSession, getSession } from "./Login";
 
-const VARIANTS = {
+const SIDEBAR_NAV = {
   admin: {
     profile: { name: "Admin", role: "Administrator" },
-    statusName: "Admin User",
     navItems: [
       { key: "dashboard", label: "Dashboard", icon: LayoutGrid },
       { key: "inventory", label: "Inventory", icon: ClipboardList },
@@ -16,8 +15,6 @@ const VARIANTS = {
     ],
   },
   customer: {
-    profile: { name: "Maria Santos", role: "Customer" },
-    statusName: "Maria Santos",
     navItems: [
       { key: "Collection", label: "Collection", icon: LayoutGrid },
       { key: "Transactions", label: "Transactions", icon: Clock },
@@ -28,7 +25,11 @@ const VARIANTS = {
 export default function Sidebar({ currentTab, onTabChange, variant = "admin" }) {
   const navigate = useNavigate();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
-  const config = VARIANTS[variant] || VARIANTS.admin;
+  const session = getSession();
+  const name = session?.username || (variant === "admin" ? "Admin" : "Customer");
+  const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+  const displayRole = session?.role === "Admin" ? "Administrator" : (session?.role || (variant === "admin" ? "Administrator" : "Customer"));
+  const navConfig = SIDEBAR_NAV[variant] || SIDEBAR_NAV.admin;
 
   const getButtonStyles = (tabName) => {
     const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium transition cursor-pointer text-left text-sm";
@@ -60,14 +61,14 @@ export default function Sidebar({ currentTab, onTabChange, variant = "admin" }) 
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 text-base leading-none">{config.profile.name}</h4>
-              <p className="text-xs text-rose-500 mt-0.5">{config.profile.role}</p>
+              <h4 className="font-semibold text-gray-900 text-base leading-none">{displayName}</h4>
+              <p className="text-xs text-rose-500 mt-0.5">{displayRole}</p>
             </div>
           </div>
 
           {/* Navigation */}
           <nav className="space-y-1.5">
-            {config.navItems.map((item) => (
+            {navConfig.navItems.map((item) => (
               <button
                 key={item.key}
                 onClick={() => onTabChange(item.key)}
@@ -93,7 +94,7 @@ export default function Sidebar({ currentTab, onTabChange, variant = "admin" }) 
                 </div>
               </div>
               <div>
-                <h5 className="font-semibold text-gray-900 text-sm leading-none">{config.statusName}</h5>
+                <h5 className="font-semibold text-gray-900 text-sm leading-none">{displayName}</h5>
                 <p className="text-xs text-rose-500 mt-0.5">Online</p>
               </div>
             </div>

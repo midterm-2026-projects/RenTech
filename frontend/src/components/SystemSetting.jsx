@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { clearSession } from './Login';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const MOCK_DB_INITIAL = {
   profile: { 
@@ -74,13 +72,6 @@ export default function AccountSettings() {
   const handleResetAll = () => {
     setTemplates({ ...DEFAULT_TEMPLATES_REF });
     triggerNotification("All templates reset to defaults.");
-  };
-
-  const navigate = useNavigate();
-
-  const handleSignOut = () => {
-    clearSession();
-    navigate("/", { replace: true });
   };
 
   const triggerNotification = (msg) => {
@@ -213,13 +204,6 @@ export default function AccountSettings() {
                 </div>
               ))}
             </div>
-          </section>
-
-          <section className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-2 sm:p-6">
-            <h3 className="text-base font-bold text-slate-900">Account Actions</h3>
-            <button onClick={handleSignOut} className="flex items-center gap-1.5 px-4 py-2 bg-rose-50/60 text-rose-700 font-bold text-[15px] rounded-xl border border-rose-100/70 hover:bg-rose-100/50 transition mt-2">
-              <LogOut className="w-4 h-4" /> Sign Out
-            </button>
           </section>
 
         </div>

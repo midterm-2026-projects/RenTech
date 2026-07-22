@@ -1,5 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authenticateUser, registerNewCustomer, verifyRolePermission, assignUserRole } from '../../service/login.service.js';
+
+const mockSupabaseChain = () => {
+  const chain = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+    insert: vi.fn().mockResolvedValue({ error: null }),
+  };
+  return chain;
+};
+
+vi.mock('../../config/supabaseClient.js', () => {
+  let chain;
+  return {
+    getSupabase: vi.fn(() => {
+      chain = mockSupabaseChain();
+      return {
+        from: vi.fn(() => chain),
+      };
+    }),
+  };
+});
 
 describe('Week 2 Day 1 - Login & Role Management Testing', () => {
 

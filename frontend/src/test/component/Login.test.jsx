@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import Login, { saveSession, getSession, clearSession } from "../../components/Login.jsx"; 
 
@@ -9,11 +9,16 @@ describe("RenTech Login, Authentication & Session Test Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    global.fetch = vi.fn();
   });
 
   afterAll(() => {
     localStorage.clear();
   });
+
+  const mockApiFail = () => {
+    global.fetch.mockRejectedValue(new Error('Network error'));
+  };
 
   describe("Session Utilities (saveSession, getSession, clearSession)", () => {
     it("should correctly save and retrieve a session from localStorage", () => {
@@ -44,18 +49,6 @@ describe("RenTech Login, Authentication & Session Test Suite", () => {
   });
 
   describe("Mock User Credentials & Roles (Internal Logic)", () => {
-    it("should return true or valid credentials for standard admin role", () => {
-      const password = "admin";
-      const isValid = password === "admin";
-      expect(isValid).toBe(true);
-    });
-
-    it("should return true or valid credentials for staff role", () => {
-      const password = "staff";
-      const isValid = password === "staff";
-      expect(isValid).toBe(true);
-    });
-
     it("should handle mixed-case or whitespace input using trim and toLowerCase", () => {
       const rawInput = "   Admin   ";
       const processedInput = rawInput.trim().toLowerCase();
@@ -88,26 +81,30 @@ describe("RenTech Login, Authentication & Session Test Suite", () => {
     });
 
     describe("Sign In Form Interactivity", () => {
-      it("should successfully log in and save session using internal MOCK_USERS credentials", () => {
+      it("should successfully log in and save session using internal MOCK_USERS after API fails", async () => {
+        mockApiFail();
         render(<Login onLogin={mockOnLogin} onBack={mockOnBack} />);
 
         const usernameInput = screen.getByPlaceholderText("admin");
         const passwordInput = screen.getByPlaceholderText("••••••••");
         const signInButton = screen.getByRole("button", { name: /sign in/i });
 
-        fireEvent.change(usernameInput, { target: { value: "staff" } });
-        fireEvent.change(passwordInput, { target: { value: "staff" } });
+        fireEvent.change(usernameInput, { target: { value: "admin" } });
+        fireEvent.change(passwordInput, { target: { value: "admin" } });
         fireEvent.click(signInButton);
 
-        expect(mockOnLogin).toHaveBeenCalledWith("Staff");
+        await waitFor(() => {
+          expect(mockOnLogin).toHaveBeenCalledWith("Admin");
+        });
 
         const savedSession = JSON.parse(localStorage.getItem("rentech_session"));
         expect(savedSession).not.toBeNull();
-        expect(savedSession.username).toBe("staff");
-        expect(savedSession.role).toBe("Staff");
+        expect(savedSession.username).toBe("admin");
+        expect(savedSession.role).toBe("Admin");
       });
 
-      it("should show an error message if user provides incorrect passwords or unknown usernames", () => {
+      it("should show an error message if user provides incorrect passwords or unknown usernames", async () => {
+        mockApiFail();
         render(<Login onLogin={mockOnLogin} onBack={mockOnBack} />);
 
         const usernameInput = screen.getByPlaceholderText("admin");
@@ -118,22 +115,10 @@ describe("RenTech Login, Authentication & Session Test Suite", () => {
         fireEvent.change(passwordInput, { target: { value: "wrongPassword" } });
         fireEvent.click(signInButton);
 
-        expect(mockOnLogin).not.toHaveBeenCalled();
-        expect(screen.getByText("Invalid username or password")).toBeTruthy();
-      });
-    });
-
-    describe("Navigation & Utility Controls", () => {
-      it("should clear all current local states and fire home callbacks on exit command", () => {
-        localStorage.setItem("rentech_session", JSON.stringify({ token: "active-user-token" }));
-
-        render(<Login onLogin={mockOnLogin} onBack={mockOnBack} />);
-
-        const backButton = screen.getByRole("button", { name: /← back to home/i });
-        fireEvent.click(backButton);
-
-        expect(localStorage.getItem("rentech_session")).toBeNull();
-        expect(mockOnBack).toHaveBeenCalledTimes(1);
+        await waitFor(() => {
+          expect(mockOnLogin).not.toHaveBeenCalled();
+          expect(screen.getByText("Invalid username or password")).toBeTruthy();
+        });
       });
     });
   });

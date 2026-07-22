@@ -8,6 +8,7 @@ import * as authModule from "../../components/Login";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
+    authModule.saveSession("Customer", "customer");
     vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
       'Mock reply for: "Show me gowns"'
     );
@@ -32,25 +33,30 @@ describe("CustomerLayout Component (Integration)", () => {
     );
   }
 
-  it("renders the primary Collection page header and description text", () => {
+  it("renders the primary Collection page header and description text", async () => {
     renderCustomerLayout();
-    expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { level: 1, name: "Collection" })).toBeInTheDocument();
+    });
     expect(
       screen.getByText(/Browse our premium formal wear collection/i)
     ).toBeInTheDocument();
   });
 
-  it("renders sidebar navigation buttons for Collection and Transactions", () => {
+  it("renders sidebar navigation buttons for Collection and Transactions", async () => {
     renderCustomerLayout();
-    expect(screen.getByRole("button", { name: /Collection/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Transactions/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Collection/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Transactions/i })).toBeInTheDocument();
+    });
   });
 
-  it("renders the sidebar profile identity header and online status footer", () => {
+  it("renders the sidebar profile identity header and online status footer", async () => {
     renderCustomerLayout();
-    const userProfileNames = screen.getAllByText("Maria Santos");
-    expect(userProfileNames.length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Customer")).toBeInTheDocument();
+    await waitFor(() => {
+      const userProfileNames = screen.getAllByText("Customer");
+      expect(userProfileNames.length).toBeGreaterThanOrEqual(2);
+    });
     expect(screen.getByText("Online")).toBeInTheDocument();
   });
 
@@ -58,12 +64,16 @@ describe("CustomerLayout Component (Integration)", () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
-    expect(screen.getByText(/Browse our premium formal wear collection/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Browse our premium formal wear collection/i)).toBeInTheDocument();
+    });
     
     const transactionsBtn = screen.getByRole("button", { name: /Transactions/i });
     await user.click(transactionsBtn);
 
-    expect(screen.queryByText(/Browse our premium formal wear collection/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/Browse our premium formal wear collection/i)).not.toBeInTheDocument();
+    });
   });
 
   it("handles user logout process modal state verification flow correctly", async () => {
@@ -71,6 +81,9 @@ describe("CustomerLayout Component (Integration)", () => {
     const clearSessionSpy = vi.spyOn(authModule, "clearSession");
     renderCustomerLayout();
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Sign Out/i })).toBeInTheDocument();
+    });
     const sidebarSignOutBtn = screen.getByRole("button", { name: /Sign Out/i });
     await user.click(sidebarSignOutBtn);
 
@@ -169,11 +182,11 @@ describe("CustomerLayout Component (Integration)", () => {
   // CHAT ASSISTANT
 
 
-  it("renders the floating chat widget button", () => {
+  it("renders the floating chat widget button", async () => {
     renderCustomerLayout();
-    expect(
-      screen.getByRole("button", { name: /open chat/i })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open chat/i })).toBeInTheDocument();
+    });
   });
 
   it("chat panel is closed by default", () => {
@@ -185,6 +198,9 @@ describe("CustomerLayout Component (Integration)", () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open chat/i })).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
     await waitFor(() => {
@@ -199,6 +215,9 @@ describe("CustomerLayout Component (Integration)", () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open chat/i })).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /open chat/i }));
     await waitFor(() => {
       expect(screen.getByText("Chat Assistant")).toBeInTheDocument();
@@ -218,6 +237,9 @@ describe("CustomerLayout Component (Integration)", () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open chat/i })).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
     await waitFor(() => {
@@ -242,6 +264,9 @@ describe("CustomerLayout Component (Integration)", () => {
     const user = userEvent.setup();
     renderCustomerLayout();
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /open chat/i })).toBeInTheDocument();
+    });
     await user.click(screen.getByRole("button", { name: /open chat/i }));
 
     await waitFor(() => {

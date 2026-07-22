@@ -35,3 +35,35 @@ export const login = async (req, res) => {
         res.status(401).json({ success: false, message: error.message });
     }
 };
+
+export const signup = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: 'Username and password are required' });
+        }
+        const result = await loginService.registerNewCustomer(username, password);
+        if (!result) {
+            return res.status(400).json({ success: false, message: 'Username already exists' });
+        }
+        res.status(201).json({ success: true, data: result });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+export const signin = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ success: false, message: 'Username and password are required' });
+        }
+        const user = await loginService.authenticateUser(username, password);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid username or password' });
+        }
+        res.status(200).json({ success: true, data: user });
+    } catch (error) {
+        res.status(401).json({ success: false, message: error.message });
+    }
+};

@@ -6,8 +6,9 @@ import ProductCard from '../components/ProductCard.jsx';
 import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
 import Transaction from '../components/Transaction.jsx';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-export default function CustomerLayout() {
+function CustomerContent() {
   const [activeTab, setActiveTab] = useState("Collection");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -170,4 +171,12 @@ export default function CustomerLayout() {
       )}
     </div>
   );
-}
+};
+
+const CustomerLayout = () => (
+  <ProtectedRoute allowedRoles={['Customer', 'Staff']}>
+    <CustomerContent />
+  </ProtectedRoute>
+);
+
+export default CustomerLayout;
