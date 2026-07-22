@@ -21,7 +21,7 @@ describe('Authentication API Behavioral Tests', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password',
+          password: 'Password1!',
           username: 'testuser'
         });
 
@@ -37,7 +37,7 @@ describe('Authentication API Behavioral Tests', () => {
         .post('/api/auth/register')
         .send({
           email: 'test@example.com',
-          password: 'password',
+          password: 'Password1!',
           username: 'testuser'
         });
 

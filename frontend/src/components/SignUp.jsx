@@ -22,6 +22,15 @@ export default function Signup({ onLogin, onBack, onNavigateToLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (pw) => {
+    if (pw.length < 8) return 'Password must be at least 8 characters';
+    if (!/[A-Z]/.test(pw)) return 'Password must include at least one uppercase letter';
+    if (!/[a-z]/.test(pw)) return 'Password must include at least one lowercase letter';
+    if (!/[0-9]/.test(pw)) return 'Password must include at least one number';
+    if (!/[!@#$%^&*]/.test(pw)) return 'Password must include at least one special character (!@#$%^&*)';
+    return null;
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
@@ -33,6 +42,11 @@ export default function Signup({ onLogin, onBack, onNavigateToLogin }) {
     }
     if (signupPassword !== signupConfirm) {
       setError('Passwords do not match');
+      return;
+    }
+    const pwError = validatePassword(signupPassword);
+    if (pwError) {
+      setError(pwError);
       return;
     }
     setLoading(true);
