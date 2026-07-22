@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onRentClick }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
 
   const getStatusButtonStyle = (status) => {
     switch (status) {
       case 'Available':
-        return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #e2e8f0' };
+        return { backgroundColor: '#b94a48', color: '#ffffff', border: '1px solid #b94a48' };
       case 'Rented':
         return { backgroundColor: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed' };
       case 'Maintenance':
@@ -47,6 +47,7 @@ const ProductCard = ({ product }) => {
           <button 
             style={{ ...styles.statusButton, ...statusStyle }}
             disabled={product.status !== 'Available'}
+            onClick={() => product.status === 'Available' && onRentClick && onRentClick(product)}
             type="button"
           >
             {buttonText}
@@ -124,7 +125,6 @@ const styles = {
     transition: 'all 0.15s ease',
   },
 };
-
 
 ProductCard.products = [
   {

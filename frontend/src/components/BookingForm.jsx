@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DatePicker from './DatePicker'; 
 
-export default function BookingForm({ onClose }) {
+export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 4500, itemName = 'Emerald Silk Mermaid Evening Gown' }) {
   const [step, setStep] = useState(1);
   const [bookingFor, setBookingFor] = useState('me'); 
   
@@ -9,9 +9,8 @@ export default function BookingForm({ onClose }) {
     return new Date().toISOString().split('T')[0]; 
   });
 
-  const price = 4500;
+  const price = itemPrice;
   const minDownpayment = price / 2; 
-
 
   const [formData, setFormData] = useState({
     name: '',
@@ -83,16 +82,14 @@ export default function BookingForm({ onClose }) {
           </div>
         </div>
 
-        {}
         <div style={styles.contentScrollBox}>
           
-          {}
           {step === 1 && (
             <div>
               <div style={styles.productCard}>
                 <div style={styles.productImgMock}>👗</div>
                 <div>
-                  <div style={styles.productName}>Emerald Silk Mermaid Evening Gown</div>
+                  <div style={styles.productName}>{itemName}</div>
                   <div style={styles.productDate}>Date: {formatReadableDate(selectedDate)}</div>
                   <div style={styles.productPrice}>₱{price.toLocaleString()}</div>
                 </div>
@@ -184,6 +181,7 @@ export default function BookingForm({ onClose }) {
               </div>
             </div>
           )}
+
           {step === 2 && (
             <div>
               <h3 style={styles.sectionTitle}>Payment Method</h3>
@@ -209,7 +207,7 @@ export default function BookingForm({ onClose }) {
               </div>
 
               <div style={styles.summaryNoticeBox}>
-                <div style={{fontWeight: 'bold', color: '#1a1a1a'}}>Downpayment: ₱{formData.downpayment.toLocaleString()}</div>
+                <div style={{fontWeight: 'bold', color: '#1a1a1a'}}>Downpayment: ₱{Number(formData.downpayment).toLocaleString()}</div>
                 <div style={{color: '#666', fontSize: '13px', marginTop: '4px'}}>
                   Remaining balance: ₱{balance.toLocaleString()} (payable at pickup).
                 </div>
@@ -226,7 +224,7 @@ export default function BookingForm({ onClose }) {
               
               <div style={styles.receiptCard}>
                 <div style={{fontWeight: 'bold', borderBottom: '1px solid #eee', paddingBottom: '8px', marginBottom: '10px', textAlign: 'left'}}>
-                  Emerald Silk Mermaid Evening Gown
+                  {itemName}
                 </div>
                 <table style={styles.receiptTable}>
                   <tbody>
@@ -234,7 +232,7 @@ export default function BookingForm({ onClose }) {
                     <tr><td style={{padding: '4px 0', color: '#666'}}>Customer</td><td style={{textAlign: 'right', fontWeight: '500'}}>{formData.name || 'N/A'}</td></tr>
                     <tr><td style={{padding: '4px 0', color: '#666'}}>Size</td><td style={{textAlign: 'right', fontWeight: '500'}}>{formData.size}</td></tr>
                     <tr><td style={{padding: '4px 0', color: '#666'}}>Payment Method</td><td style={{textAlign: 'right', fontWeight: '500'}}>{formData.paymentMethod}</td></tr>
-                    <tr><td style={{padding: '4px 0', color: '#666'}}>Downpayment</td><td style={{textAlign: 'right', color: '#b94a48', fontWeight: '700'}}>₱{formData.downpayment.toLocaleString()}</td></tr>
+                    <tr><td style={{padding: '4px 0', color: '#666'}}>Downpayment</td><td style={{textAlign: 'right', color: '#b94a48', fontWeight: '700'}}>₱{Number(formData.downpayment).toLocaleString()}</td></tr>
                     <tr><td style={{padding: '4px 0', color: '#666'}}>Balance</td><td style={{textAlign: 'right', fontWeight: '700'}}>₱{balance.toLocaleString()}</td></tr>
                   </tbody>
                 </table>
@@ -244,15 +242,49 @@ export default function BookingForm({ onClose }) {
 
         </div>
 
-        {}
+        {/* Footer */}
         <div style={styles.footer}>
           {step < 3 ? (
             <>
               <button style={styles.btnCancel} onClick={onClose}>Cancel</button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   if (step === 2) {
-                    setStep(3); 
+                    try {
+                      const response = await fetch('http://localhost:5000/api/transactions', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          item: itemName,
+                          username: formData.name || 'Maria Santos',
+                          date: selectedDate,
+                          status: 'Reserved',
+                          amount: Number(formData.downpayment),
+                          downpayment: Number(formData.downpayment),
+                          balance: balance,
+                          size: formData.size,
+                          paymentMethod: formData.paymentMethod,
+                          phone: formData.phone,
+                          address: formData.address,
+                          notes: formData.notes
+                        }),
+                      });
+
+                      const result = await response.json();
+                      if (result.status === 'success' || response.ok) {
+                        setStep(3); 
+                        if (onBookingSuccess) {
+                          onBookingSuccess();
+                        }
+                      } else {
+                        alert('Failed to save transaction: ' + (result.message || 'Unknown error'));
+                      }
+                    } catch (err) {
+                      console.error('Error submitting booking:', err);
+                      alert('Server connection error while saving booking.');
+                    }
                   } else {
                     setStep(prev => prev + 1);
                   }

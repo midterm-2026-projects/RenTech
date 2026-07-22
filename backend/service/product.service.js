@@ -5,7 +5,11 @@ export default {
     return await productModel.findAll({ page, limit, search, status });
   },
 
+  async updateProductStatusByName(name, status) {
+    return await productModel.updateStatusByName(name, status);
+  },
+
   async softDeleteProduct(id) {
-    return await productModel.softDelete(id);
+    return await productModel.softDeleteProduct(id);
   },
 };
