@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const SearchAndFilter = ({ searchTerm, onSearchChange, selectedCategory, onCategoryChange }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const statuses = ['All', 'Available', 'Maintenance', 'Overdue', 'Rented'];
+  const statuses = ['All', 'Available', 'Rented'];
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 

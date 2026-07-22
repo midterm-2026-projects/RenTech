@@ -44,7 +44,7 @@ export async function updateStatusByName(name, status) {
   if (sb.error) return { data: null, error: sb.error };
 
   const { data, error } = await sb
-    .from('products')
+    .from('inventory_items')
     .update({ status: status })
     .eq('name', name)
     .select();

@@ -10,7 +10,7 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
     return new Date().toISOString().split('T')[0]; 
   });
 
-  const price = itemPrice;
+  const price = Number(itemPrice) || 0;
   const minDownpayment = price / 2; 
 
   const [formData, setFormData] = useState({
@@ -44,7 +44,14 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
   };
 
   const handleDownpaymentChange = (e) => {
-    const value = Math.max(minDownpayment, Math.min(price, Number(e.target.value)));
+    const raw = e.target.value;
+    if (raw === '') {
+      setFormData(prev => ({ ...prev, downpayment: minDownpayment }));
+      return;
+    }
+    const num = Number(raw);
+    if (isNaN(num)) return;
+    const value = Math.max(minDownpayment, Math.min(price, num));
     setFormData(prev => ({ ...prev, downpayment: value }));
   };
 
@@ -285,7 +292,7 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
         <div style={styles.footer}>
           {step < 3 ? (
             <>
-              <button style={styles.btnCancel} onClick={onClose}>Cancel</button>
+              <button style={styles.btnCancel} onClick={step === 2 ? () => setStep(1) : onClose}>Cancel</button>
               <button 
                 onClick={async () => {
                   if (step === 1 && !validateStep1()) return;
@@ -313,13 +320,13 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
                       });
 
                       const result = await response.json();
-                      if (result.status === 'success' || response.ok) {
+                      if (response.ok) {
                         setStep(3); 
                         if (onBookingSuccess) {
                           onBookingSuccess();
                         }
                       } else {
-                        alert('Failed to save transaction: ' + (result.message || 'Unknown error'));
+                        alert('Failed to save transaction: ' + (result.error || result.message || 'Unknown error'));
                       }
                     } catch (err) {
                       console.error('Error submitting booking:', err);

@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+
+const PAGE_SIZE = 8;
+
+const STATUS_COLORS = {
+  Reserved: 'bg-blue-50 text-blue-700',
+  Confirmed: 'bg-emerald-50 text-emerald-700',
+  Completed: 'bg-indigo-50 text-indigo-700',
+  Cancelled: 'bg-gray-100 text-gray-500',
+  Overdue: 'bg-rose-50 text-rose-700',
+  Returned: 'bg-purple-50 text-purple-700',
+};
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -19,6 +30,7 @@ const Transaction = () => {
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const filterRef = useRef(null);
   const isMobile = useIsMobile();
 
@@ -40,7 +52,9 @@ const Transaction = () => {
         const result = await response.json();
 
         if (result.status === 'success') {
-          setTransactions(result.data || []);
+          const data = result.data || [];
+          data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+          setTransactions(data);
         } else {
           setError(result.message || 'Failed to fetch transactions');
         }
@@ -60,9 +74,13 @@ const Transaction = () => {
     if (statusFilter !== 'All' && tx.status !== statusFilter) return false;
     const term = searchTerm.toLowerCase();
     return (tx.id && tx.id.toLowerCase().includes(term)) ||
-           (tx.item && tx.item.toLowerCase().includes(term)) ||
+           ((tx.itemName || tx.item) && (tx.itemName || tx.item).toLowerCase().includes(term)) ||
            (tx.username && tx.username.toLowerCase().includes(term));
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
+  const paginated = filteredTransactions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  if (page > totalPages) setPage(1);
 
   return (
     <div className="w-full">
@@ -82,7 +100,7 @@ const Transaction = () => {
             type="text"
             placeholder="Search by ID, customer, or item..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
             className="w-full pl-11 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-full text-sm text-gray-700 outline-none bg-white"
           />
         </div>
@@ -99,7 +117,7 @@ const Transaction = () => {
               {statuses.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { setStatusFilter(s); setFilterOpen(false); }}
+                  onClick={() => { setStatusFilter(s); setFilterOpen(false); setPage(1); }}
                   className={`w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition cursor-pointer ${
                     statusFilter === s ? 'bg-rose-500 text-white' : 'text-gray-700 hover:bg-gray-50'
                   }`}
@@ -118,55 +136,95 @@ const Transaction = () => {
       ) : error ? (
         <div className="text-center py-10 text-sm text-red-500">{error}</div>
       ) : filteredTransactions.length > 0 ? (
-        isMobile ? (
-          <div className="space-y-3">
-            {filteredTransactions.map((tx) => (
-              <div key={tx.id || tx._id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-gray-900">{tx.id}</span>
-                  <span className="text-xs font-bold text-gray-900">₱{tx.amount || tx.totalCost}</span>
+        <>
+          {isMobile ? (
+            <div className="space-y-3">
+              {paginated.map((tx) => (
+                <div key={tx.id || tx._id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-gray-900">{tx.id}</span>
+                    <span className="text-xs font-bold text-gray-900">₱{tx.amount || tx.totalCost}</span>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">{tx.item || tx.itemName}</div>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>{tx.username || 'Customer'}</span>
+                    <span>{tx.date}</span>
+                  </div>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${STATUS_COLORS[tx.status] || 'bg-gray-100 text-gray-600'}`}>{tx.status}</span>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 mb-1">{tx.item || tx.itemName}</div>
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>{tx.username || 'Customer'}</span>
-                  <span>{tx.date}</span>
-                </div>
-                <div className="mt-2">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-600">{tx.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="w-full border border-gray-100 rounded-2xl overflow-x-auto bg-white">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">ID</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Item</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Customer</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Date</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
-                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTransactions.map((tx) => (
-                  <tr key={tx.id || tx._id} className="border-b border-gray-50">
-                    <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900">{tx.id}</td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.item || tx.itemName}</td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.username || 'Customer'}</td>
-                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.date}</td>
-                    <td className="px-4 sm:px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-600">{tx.status}</span>
-                    </td>
-                    <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900 text-right">₱{tx.amount || tx.totalCost}</td>
+              ))}
+            </div>
+          ) : (
+            <div className="w-full border border-gray-100 rounded-2xl overflow-x-auto bg-white">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50/50">
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Item</th>
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Customer</th>
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Date</th>
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right">Amount</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {paginated.map((tx) => (
+                    <tr key={tx.id || tx._id} className="border-b border-gray-50">
+                      <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900">{tx.id}</td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.item || tx.itemName}</td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.username || 'Customer'}</td>
+                      <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.date}</td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${STATUS_COLORS[tx.status] || 'bg-gray-100 text-gray-600'}`}>{tx.status}</span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900 text-right">₱{tx.amount || tx.totalCost}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 text-sm text-gray-400">
+              <span>{filteredTransactions.length} record{filteredTransactions.length === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-8 h-8 text-xs rounded-lg border transition-colors ${
+                      p === page
+                        ? 'border-rose-200 bg-rose-50 text-rose-600'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
+                >
+                  Next
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="text-center py-10 text-sm text-gray-400">No transactions found.</div>
       )}
@@ -174,141 +232,6 @@ const Transaction = () => {
   );
 };
 
-const styles = {
-  container: {
-    width: '100%', 
-    backgroundColor: '#ffffff',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    boxSizing: 'border-box',
-    padding: '20px 0', 
-  },
-  contentWrapper: {
-    maxWidth: '1000px', 
-    width: '100%',
-    margin: '0 auto', 
-    padding: '0 24px', 
-    boxSizing: 'border-box',
-  },
-  header: {
-    marginBottom: '28px',
-    width: '100%',
-  },
-  title: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#0f172a',
-    margin: '0 0 6px 0',
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: '#64748b',
-    margin: 0,
-  },
-  searchWrapper: {
-    position: 'relative',
-    maxWidth: '380px',
-    width: '100%',
-    marginBottom: '32px',
-  },
-  iconWrapper: {
-    position: 'absolute',
-    top: '50%',
-    left: '16px',
-    transform: 'translateY(-50%)',
-    display: 'flex',
-    alignItems: 'center',
-    pointerEvents: 'none',
-  },
-  searchIcon: {
-    width: '18px',
-    height: '18px',
-  },
-  input: {
-    width: '100%',
-    padding: '12px 16px 12px 44px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '100px',
-    fontSize: '14px',
-    color: '#334155',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  tableCard: {
-    width: '100%',
-    border: '1px solid #f1f5f9',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    boxSizing: 'border-box',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    textAlign: 'left',
-  },
-  tableHeaderRow: {
-    borderBottom: '1px solid #f1f5f9',
-    backgroundColor: '#fafafa',
-  },
-  thLeft: {
-    padding: '18px 24px',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  thRight: {
-    padding: '18px 24px',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#64748b',
-    textAlign: 'right',
-  },
-  tableRow: {
-    borderBottom: '1px solid #f8fafc',
-  },
-  tdId: {
-    padding: '20px 24px',
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  tdItem: {
-    padding: '20px 24px',
-    fontSize: '14px',
-    color: '#64748b',
-  },
-  tdDate: {
-    padding: '20px 24px',
-    fontSize: '14px',
-    color: '#64748b',
-  },
-  tdLeft: {
-    padding: '20px 24px',
-  },
-  tdAmount: {
-    padding: '20px 24px',
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#0f172a',
-    textAlign: 'right',
-  },
-  badge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: '4px 10px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: '600',
-    backgroundColor: '#eff6ff',
-    color: '#2563eb',
-  },
-  noData: {
-    padding: '40px',
-    textAlign: 'center',
-    color: '#94a3b8',
-    fontSize: '14px',
-  }
-};
+// styles intentionally removed — all styling is now Tailwind
 
 export default Transaction;

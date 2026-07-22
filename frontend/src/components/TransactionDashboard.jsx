@@ -25,7 +25,7 @@ export default function TransactionDashboard() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState({
-    Confirmed: false, Reserved: false, Overdue: false, Completed: false, Cancelled: false
+    Confirmed: false, Reserved: false, Overdue: false, Completed: false, Cancelled: false, Returned: false
   });
   const [transactions, setTransactions] = useState([]);
   const [page, setPage] = useState(1);
@@ -49,7 +49,8 @@ export default function TransactionDashboard() {
       const res = await getTransactions({
         page: nextPage, limit: PAGE_SIZE, search: debouncedSearch, status: statusParam,
       });
-      setTransactions(res.data || []);
+      const sorted = (res.data || []).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      setTransactions(sorted);
       setTotal(res.total || 0);
       setTotalPages(res.totalPages || 1);
       setPage(nextPage);
