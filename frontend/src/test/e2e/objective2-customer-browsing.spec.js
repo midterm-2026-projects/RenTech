@@ -45,12 +45,15 @@ test.describe('Objective 2 — Customer-Based Booking Interface', () => {
     // 4. Click 'Rent Now' on the available product
     await page.getByRole('button', { name: 'Rent Now' }).first().click();
 
-    // 5. Verify transaction or booking state updates (adjust based on your modal/form view)
+    // 5. Close the booking form modal to proceed
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    // 6. Verify transaction or booking state updates (adjust based on your modal/form view)
     // e.g., checking that a transaction record or booking confirmation modal appears
     await page.getByRole('button', { name: 'Transactions' }).click();
-    await expect(page.getByText('Transactions')).toBeVisible();
+    await expect(page.getByText('Transactions').first()).toBeVisible();
 
-    // 6. Customer logout
+    // 7. Customer logout
     await page.getByRole('button', { name: 'Sign Out' }).click();
     await expect(page.getByText('Confirm Sign Out')).toBeVisible();
     await page.getByRole('button', { name: 'Sign Out' }).last().click();

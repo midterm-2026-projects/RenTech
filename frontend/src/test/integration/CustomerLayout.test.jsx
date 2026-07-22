@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import CustomerLayout from "../../pages/CustomerLayout";
 import * as customerService from "../../services/customerAssistantService";
+import * as authModule from "../../components/Login";
 
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
@@ -67,6 +68,7 @@ describe("CustomerLayout Component (Integration)", () => {
 
   it("handles user logout process modal state verification flow correctly", async () => {
     const user = userEvent.setup();
+    const clearSessionSpy = vi.spyOn(authModule, "clearSession");
     renderCustomerLayout();
 
     const sidebarSignOutBtn = screen.getByRole("button", { name: /Sign Out/i });
@@ -79,7 +81,7 @@ describe("CustomerLayout Component (Integration)", () => {
     const modalConfirmBtn = modalButtons[modalButtons.length - 1]; 
     await user.click(modalConfirmBtn);
 
-    expect(window.alert).toHaveBeenCalledWith("Signing out...");
+    expect(clearSessionSpy).toHaveBeenCalled();
   });
 
 
