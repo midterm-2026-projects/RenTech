@@ -21,9 +21,33 @@ const MOCK_DB_INITIAL = {
 };
 
 const DEFAULT_TEMPLATES_REF = { ...MOCK_DB_INITIAL.templates };
+const STORAGE_KEY = 'rentech_templates';
+
+function loadTemplates() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const merged = { ...DEFAULT_TEMPLATES_REF };
+      for (const key of Object.keys(merged)) {
+        if (parsed[key] !== undefined) {
+          merged[key] = parsed[key];
+        }
+      }
+      return merged;
+    }
+  } catch { /* ignore */ }
+  return { ...DEFAULT_TEMPLATES_REF };
+}
+
+function saveTemplates(templates) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+  } catch { /* ignore */ }
+}
 
 export default function AccountSettings() {
-  const [templates, setTemplates] = useState({});
+  const [templates, setTemplates] = useState(loadTemplates);
   const [profile, setProfile] = useState({ name: '', role: '', email: '', phone: '' });
   const [integrations, setIntegrations] = useState([]);
   
@@ -36,7 +60,6 @@ export default function AccountSettings() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setTemplates({ ...MOCK_DB_INITIAL.templates });
       setProfile({ ...MOCK_DB_INITIAL.profile });
       setIntegrations([...MOCK_DB_INITIAL.integrations]);
       setIsLoading(false);
@@ -44,6 +67,12 @@ export default function AccountSettings() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      saveTemplates(templates);
+    }
+  }, [templates, isLoading]);
 
   const handleEdit = (key) => {
     setEditingKey(key);
@@ -61,7 +90,7 @@ export default function AccountSettings() {
 
     setTemplates(prev => ({ ...prev, [key]: editValue.trim() }));
     setEditingKey(null);
-    triggerNotification("Template modified successfully (Mock Save)!");
+    triggerNotification("Template modified successfully!");
   };
 
   const handleResetSingle = (key) => {
