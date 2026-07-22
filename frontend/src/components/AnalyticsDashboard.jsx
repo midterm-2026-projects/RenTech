@@ -1,3 +1,4 @@
+import { TrendingUp, BarChart3 } from 'lucide-react';
 import {
   AreaChart, Area,
   LineChart, Line,
@@ -47,10 +48,10 @@ const ForecastTooltip = ({ active, payload, label }) => {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs space-y-0.5">
       <p className="font-semibold text-gray-700 mb-1">{label}</p>
-      <p className="text-emerald-600">
+      <p className="text-rose-600">
         Actual Demand: {point.actualDemand != null ? point.actualDemand : '—'}
       </p>
-      <p className="text-amber-600">
+      <p className="text-blue-600">
         Projected (SMA): {point.projectedSMA != null ? point.projectedSMA : '—'}
       </p>
     </div>
@@ -94,54 +95,62 @@ const AnalyticsDashboard = ({ revenueData = hardcodedRevenueData, forecastData =
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {/* --- Revenue Trends Chart (Area) --- */}
       {hasRevenue && (
-        <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white revenue-chart-container">
-          <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-bold text-gray-800">Revenue Trends</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Revenue for {currentMonth} (PHP)</p>
+        <div className="w-full border border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden revenue-chart-container">
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-white" />
+                <h2 className="text-sm font-bold text-white">Revenue Trends</h2>
               </div>
-              <span className="text-2xl font-bold text-rose-600">
+              <span className="text-lg font-bold text-white">
                 {fmtPHP(currentMonthRevenue)}
               </span>
+            </div>
+            <p className="text-xs text-rose-200 mt-0.5">Revenue for {currentMonth} (PHP)</p>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={normalizedRevenue} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#e11d48" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#e11d48" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-              <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={64} />
-              <Tooltip content={<RevenueTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="#e11d48" strokeWidth={3} fill="url(#revFill)" name="Monthly Revenue" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={normalizedRevenue} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#e11d48" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#e11d48" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={64} />
+                <Tooltip content={<RevenueTooltip />} />
+                <Area type="monotone" dataKey="revenue" stroke="#e11d48" strokeWidth={3} fill="url(#revFill)" name="Monthly Revenue" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* --- Demand Forecasting SMA Chart (Line) --- */}
       {hasForecast && (
-        <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white forecast-chart-container">
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Demand Forecasting (SMA)</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Actual vs. projected rental demand</p>
+        <div className="w-full border border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden forecast-chart-container">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-white" />
+              <h2 className="text-sm font-bold text-white">Demand Forecasting (SMA)</h2>
+            </div>
+            <p className="text-xs text-blue-200 mt-0.5">Actual vs. projected rental demand</p>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={normalizedForecast} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-              <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={36} />
-              <Tooltip content={<ForecastTooltip />} />
-              <Legend verticalAlign="top" height={28} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
-              {/* connectNulls ensures the line doesn't break if a month is missing actual data */}
-              <Line type="monotone" dataKey="actualDemand" stroke="#10b981" name="Actual Demand" strokeWidth={3} dot={{ r: 3 }} connectNulls />
-              {/* Dashed line to represent mathematical projection */}
-              <Line type="monotone" dataKey="projectedSMA" stroke="#f59e0b" name="Projected Demand (SMA)" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 2 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={normalizedForecast} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={36} />
+                <Tooltip content={<ForecastTooltip />} />
+                <Legend verticalAlign="top" height={28} iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="actualDemand" stroke="#e11d48" name="Actual Demand" strokeWidth={3} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="projectedSMA" stroke="#3b82f6" name="Projected Demand (SMA)" strokeDasharray="5 5" strokeWidth={2} dot={{ r: 2 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>

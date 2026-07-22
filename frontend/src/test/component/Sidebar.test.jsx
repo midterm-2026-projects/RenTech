@@ -50,14 +50,14 @@ describe("Sidebar Layout and Interactions", () => {
     const dashboardBtn = screen.getByText("Dashboard").closest("button");
 
     // Assert dashboard is initially highlighted
-    expect(dashboardBtn).toHaveClass("bg-rose-50/60");
-    expect(inventoryBtn).not.toHaveClass("bg-rose-50/60");
+    expect(dashboardBtn).toHaveClass("bg-rose-50/50");
+    expect(inventoryBtn).not.toHaveClass("bg-rose-50/50");
 
     // Click inventory tab
     fireEvent.click(inventoryBtn);
 
     // Assert active class shifted to inventory
-    expect(inventoryBtn).toHaveClass("bg-rose-50/60");
+    expect(inventoryBtn).toHaveClass("bg-rose-50/50");
     expect(dashboardBtn).not.toHaveClass("bg-rose-50/60");
   });
 

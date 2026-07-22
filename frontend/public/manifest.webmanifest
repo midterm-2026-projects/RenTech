@@ -1,0 +1,20 @@
+{
+  "name": "RenTech — Dress & Gown Rental",
+  "short_name": "RenTech",
+  "description": "Rent gowns, suits, barongs, Filipiniana and costumes. AI stylist, inventory and business intelligence.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#f43f5e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

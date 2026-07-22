@@ -1,3 +1,4 @@
+import { TrendingUp, CalendarCheck, Package } from 'lucide-react';
 import {
   PieChart, Pie, Cell,
   LineChart, Line,
@@ -7,16 +8,16 @@ import {
 const fmtPHP = (value) => `₱${Number(value || 0).toLocaleString('en-PH')}`;
 
 const STATUS_COLORS = {
-  Confirmed: '#10b981',
-  Reserved: '#f59e0b',
-  Overdue: '#ef4444',
+  Confirmed: '#e11d48',
+  Reserved: '#3b82f6',
+  Overdue: '#be123c',
 };
 
 const INVENTORY_COLORS = {
-  Available: '#10b981',
-  Rented: '#6366f1',
-  Overdue: '#ef4444',
-  Maintenance: '#f59e0b',
+  Available: '#e11d48',
+  Rented: '#3b82f6',
+  Overdue: '#be123c',
+  Maintenance: '#1d4ed8',
 };
 
 const statusColor = (name, palette, fallback = '#94a3b8') =>
@@ -68,88 +69,111 @@ const DashboardCharts = ({
 
   if (!hasRevenue && !hasBooking && !hasInventory) {
     return (
-      <div className="w-full h-96 border border-gray-200 rounded-2xl shadow-sm bg-white flex items-center justify-center">
+      <div className="w-full h-96 border border-gray-200 rounded-xl shadow-sm bg-white flex items-center justify-center">
         <p className="text-gray-500 font-medium text-lg">No analytics data available</p>
       </div>
     );
   }
 
+  const visibleCount = [hasRevenue, hasBooking, hasInventory].filter(Boolean).length;
+  const gridCols = visibleCount <= 2
+    ? 'grid-cols-1 md:grid-cols-2'
+    : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3';
+  const singleColSpan = visibleCount === 1 ? 'md:col-span-2' : '';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className={`grid ${gridCols} gap-5 sm:gap-6`}>
       {/* --- Revenue Trajectory (Line) --- */}
       {hasRevenue && (
-        <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white" data-testid="revenue-trajectory-chart">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">Revenue Trajectory</h2>
-          <p className="text-xs text-gray-400 mb-4">Monthly rental revenue</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={normalizedRevenue} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-              <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={56} />
-              <Tooltip content={<RevenueTooltip />} />
-              <Line type="monotone" dataKey="revenue" stroke="#e11d48" strokeWidth={3} dot={{ r: 3 }} name="Revenue" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className={`w-full border border-gray-200 rounded-xl shadow-sm bg-white ${singleColSpan}`} data-testid="revenue-trajectory-chart">
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-4 sm:px-5 py-3 overflow-hidden rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <h2 className="text-sm sm:text-base font-bold text-white">Revenue Trajectory</h2>
+            </div>
+            <p className="text-sm text-rose-200 mt-0.5">Monthly rental revenue</p>
+          </div>
+          <div className="p-4 sm:p-5">
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={normalizedRevenue} margin={{ top: 10, right: 20, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={64} />
+                <Tooltip content={<RevenueTooltip />} />
+                <Line type="monotone" dataKey="revenue" stroke="#e11d48" strokeWidth={3} dot={{ r: 3 }} name="Revenue" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* --- Booking Status (Pie) --- */}
       {hasBooking && (
-        <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white" data-testid="booking-status-chart">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">Booking Status</h2>
-          <p className="text-xs text-gray-400 mb-4">Distribution of rental states</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                innerRadius={45}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={statusColor(entry.name, STATUS_COLORS)} />
-                ))}
-              </Pie>
-              <Tooltip content={<StatusTooltip />} />
-              <Legend verticalAlign="bottom" height={28} wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className={`w-full border border-gray-200 rounded-xl shadow-sm bg-white ${singleColSpan}`} data-testid="booking-status-chart">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-5 py-3 overflow-hidden rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <h2 className="text-sm sm:text-base font-bold text-white">Booking Status</h2>
+            </div>
+            <p className="text-sm text-blue-200 mt-0.5">Distribution of rental states</p>
+          </div>
+          <div className="p-4 sm:p-5 pb-8 sm:pb-7">
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="45%"
+                  outerRadius={100}
+                  innerRadius={55}
+                  paddingAngle={2}
+                >
+                  {pieData.map((entry) => (
+                    <Cell key={entry.name} fill={statusColor(entry.name, STATUS_COLORS)} />
+                  ))}
+                </Pie>
+                <Tooltip content={<StatusTooltip />} />
+                <Legend verticalAlign="bottom" height={48} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
       {/* --- Inventory by Status (Pie) --- */}
       {hasInventory && (
-        <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white" data-testid="inventory-status-chart">
-          <h2 className="text-lg font-bold text-gray-800 mb-1">Inventory by Status</h2>
-          <p className="text-xs text-gray-400 mb-4">Current stock distribution</p>
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={inventoryData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                innerRadius={45}
-                paddingAngle={2}
-                label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {inventoryData.map((entry) => (
-                  <Cell key={entry.name} fill={statusColor(entry.name, INVENTORY_COLORS)} />
-                ))}
-              </Pie>
-              <Tooltip content={<StatusTooltip />} />
-              <Legend verticalAlign="bottom" height={28} wrapperStyle={{ fontSize: 12 }} />
-            </PieChart>
-          </ResponsiveContainer>
+        <div className={`w-full border border-gray-200 rounded-xl shadow-sm bg-white ${singleColSpan}`} data-testid="inventory-status-chart">
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-4 sm:px-5 py-3 overflow-hidden rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <h2 className="text-sm sm:text-base font-bold text-white">Inventory by Status</h2>
+            </div>
+            <p className="text-sm text-rose-200 mt-0.5">Current stock distribution</p>
+          </div>
+          <div className="p-4 sm:p-5 pb-8 sm:pb-7">
+            <ResponsiveContainer width="100%" height={340}>
+              <PieChart>
+                <Pie
+                  data={inventoryData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="45%"
+                  outerRadius={100}
+                  innerRadius={55}
+                  paddingAngle={2}
+                >
+                  {inventoryData.map((entry) => (
+                    <Cell key={entry.name} fill={statusColor(entry.name, INVENTORY_COLORS)} />
+                  ))}
+                </Pie>
+                <Tooltip content={<StatusTooltip />} />
+                <Legend verticalAlign="bottom" height={48} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>

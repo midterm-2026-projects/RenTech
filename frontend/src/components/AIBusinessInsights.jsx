@@ -1,15 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Sparkles, Lightbulb, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Sparkles, TrendingUp, Package, Users, Clock, RotateCcw, BarChart3, Lightbulb } from 'lucide-react';
 import api from '../services/analyticsApiClient';
-import { generateReport, buildFallbackInsights } from '../services/aiInsightsService';
+import { generateReport, buildFallbackInsights, clearInsightsCache, getCacheTimestamp } from '../services/aiInsightsService';
 
-// Matches the backend's error/configuration failure messages so we can fall
-// back to locally-generated insights instead of surfacing the raw message.
 const isErrorReport = (text = '') =>
   /unable to generate|not configured|could not generate|no report generated/i.test(text);
 
-// Splits a long AI report (or any multi-line insight) into discrete,
-// scannable bullets so the panel renders cleanly instead of one giant block.
 const toBullets = (insights = []) =>
   insights.flatMap((item) => {
     if (typeof item !== 'string') return [item];
@@ -19,9 +15,61 @@ const toBullets = (insights = []) =>
       .filter(Boolean);
   });
 
+const CATEGORIES = [
+  { match: /revenue|sales|income|₱|peso|demand|projected|forecast|rental|active/i, icon: TrendingUp, label: 'Revenue', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
+  { match: /inventory|stock|restock|slow-moving|customer|satisfaction|feedback|overdue|return|fulfilment/i, icon: Package, label: 'Operations', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { match: /.*/, icon: Lightbulb, label: 'Insight', bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', iconBg: 'bg-gray-100', iconColor: 'text-gray-600' },
+];
+
+const categorizeInsight = (text) => CATEGORIES.find((c) => c.match.test(text)) || CATEGORIES[CATEGORIES.length - 1];
+
+const InsightCard = ({ insight, index }) => {
+  const cat = useMemo(() => categorizeInsight(insight), [insight]);
+  const Icon = cat.icon;
+
+  return (
+    <li
+      className={`group flex items-start gap-4 p-4 rounded-xl ${cat.bg} ${cat.border} border hover:shadow-md transition-all duration-200`}
+    >
+      <span className={`mt-0.5 w-8 h-8 shrink-0 rounded-lg ${cat.iconBg} ${cat.iconColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+        <Icon className="w-4 h-4" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <span className={`text-xs font-semibold uppercase tracking-wider ${cat.text}`}>
+          {cat.label}
+        </span>
+        <p className="mt-1 text-sm text-gray-700 leading-relaxed">{insight}</p>
+      </div>
+    </li>
+  );
+};
+
+const LoadingSkeleton = () => (
+  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-lg bg-rose-100 animate-pulse" />
+      <div className="space-y-2 flex-1">
+        <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+        <div className="h-3 w-32 bg-gray-100 rounded animate-pulse" />
+      </div>
+    </div>
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+        <div className="w-8 h-8 rounded-lg bg-gray-200 animate-pulse shrink-0" />
+        <div className="space-y-2 flex-1">
+          <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+          <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
+          <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const AIBusinessInsights = ({ insights = [] }) => {
   const [internalInsights, setInternalInsights] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [lastGenerated, setLastGenerated] = useState(getCacheTimestamp());
 
   const loadAnalyticsPayload = useCallback(async () => {
     const kpisRes = await api.get('/api/analytics/kpis');
@@ -68,16 +116,15 @@ const AIBusinessInsights = ({ insights = [] }) => {
 
       if (rawInsights.length && !errorLike) {
         setInternalInsights(rawInsights);
+        setLastGenerated(Date.now());
       } else if (errorLike) {
-        // Generative AI failed/unavailable — fall back to locally built,
-        // properly formatted insights instead of surfacing the raw error.
-        setInternalInsights(
-          buildFallbackInsights({
-            kpis: payload.kpis,
-            revenue: payload.revenue,
-            forecast: payload.forecast,
-          })
-        );
+        const fallback = buildFallbackInsights({
+          kpis: payload.kpis,
+          revenue: payload.revenue,
+          forecast: payload.forecast,
+        });
+        setInternalInsights(fallback);
+        setLastGenerated(Date.now());
       } else {
         setInternalInsights([]);
       }
@@ -88,74 +135,80 @@ const AIBusinessInsights = ({ insights = [] }) => {
     }
   }, [loadAnalyticsPayload]);
 
+  const handleRegenerate = useCallback(async () => {
+    clearInsightsCache();
+    setInternalInsights([]);
+    await fetchAiData();
+  }, [fetchAiData]);
+
   useEffect(() => {
     if ((insights || []).length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchAiData();
     }
-    // Depend on length (not array identity) so the default `[]` prop doesn't
-    // trigger a refetch on every render.
   }, [insights?.length, fetchAiData]);
 
   const displayInsights = toBullets((insights || []).length > 0 ? insights : internalInsights);
   const hasData = displayInsights.length > 0;
 
-  if (!hasData && loading) {
-    return (
-      <div className="p-6 bg-white border border-indigo-100 rounded-2xl shadow-sm">
-        <div className="flex items-center space-x-3 text-indigo-500">
-          <RefreshCw className="w-5 h-5 animate-spin" />
-          <p className="text-sm font-medium">Loading AI insights...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!hasData && loading) return <LoadingSkeleton />;
 
   if (!hasData) {
     return (
-      <div className="p-6 bg-white border border-indigo-100 rounded-2xl shadow-sm" data-testid="ai-fallback">
-        <div className="flex items-center space-x-2 text-indigo-500 mb-2">
-          <Sparkles className="w-5 h-5" />
-          <h2 className="text-lg font-bold text-gray-800">AI Business Insights</h2>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8" data-testid="ai-fallback">
+        <div className="flex flex-col items-center text-center py-6">
+          <span className="p-3 rounded-2xl bg-rose-50 text-rose-400 mb-4">
+            <Sparkles className="w-8 h-8" />
+          </span>
+          <h2 className="text-lg font-bold text-gray-800 mb-1">AI Business Insights</h2>
+          <p className="text-sm text-gray-400 max-w-xs">
+            No AI business insights available at this time. Analytics data may not be populated yet.
+          </p>
         </div>
-        <p className="text-gray-500 italic">
-          No AI business insights available at this time.
-        </p>
       </div>
     );
   }
 
+  const formatTime = (ts) => {
+    if (!ts) return '';
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return `${Math.floor(diff / 3600)}h ago`;
+  };
+
   return (
-    <div className="ai-insights-container bg-white border border-indigo-100 rounded-2xl shadow-sm p-6 space-y-4">
-      <div className="flex items-center space-x-2">
-        <span className="p-2 rounded-lg bg-indigo-50 text-indigo-500">
-          <Sparkles className="w-5 h-5" />
-        </span>
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">AI Business Insights</h2>
-          <p className="text-xs text-gray-400">Generated from live analytics data</p>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-1.5 rounded-lg bg-white/20 text-white shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-white">AI Business Insights</h2>
+              <p className="text-xs text-rose-200">
+                {lastGenerated ? `Updated ${formatTime(lastGenerated)}` : 'From live analytics data'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRegenerate}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-700 bg-white rounded-lg hover:bg-rose-50 transition-colors disabled:opacity-50 shrink-0 shadow-sm"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Regenerate</span>
+          </button>
         </div>
       </div>
 
-      <section>
-        <div className="flex items-center space-x-2 mb-3">
-          <Lightbulb className="w-4 h-4 text-amber-500" />
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Business Insights</h3>
-        </div>
+      <div className="p-6">
         <ul className="space-y-3" data-testid="insights-list">
           {displayInsights.map((insight, index) => (
-            <li
-              key={index}
-              className="flex items-start space-x-3 p-4 rounded-xl bg-amber-50/60 border border-amber-100"
-            >
-              <span className="mt-0.5 w-6 h-6 shrink-0 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">
-                {index + 1}
-              </span>
-              <p className="text-sm text-gray-700 leading-relaxed">{insight}</p>
-            </li>
+            <InsightCard key={index} insight={insight} index={index} />
           ))}
         </ul>
-      </section>
+      </div>
     </div>
   );
 };

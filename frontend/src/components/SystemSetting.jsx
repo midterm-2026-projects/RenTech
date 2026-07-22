@@ -11,8 +11,8 @@ const MOCK_DB_INITIAL = {
     phone: '+63 917 123 4567' 
   },
   integrations: [
-    { id: 1, name: "Semaphore SMS Gateway", status: "Connected", desc: "Automated return reminders & booking confirmations." },
-    { id: 2, name: "PayMongo Payments", status: "Active", desc: "Secure GCash & Credit Card downpayments." }
+    { id: 1, name: "Semaphore SMS Gateway", status: "Disconnected", desc: "Automated return reminders & booking confirmations." },
+    { id: 2, name: "PayMongo Payments", status: "Inactive", desc: "Secure GCash & Credit Card downpayments." }
   ],
   templates: {
     bookingConfirmation: "Hi {customerName}, your booking for {itemName} on {rentalDate} is confirmed! Show this QR when you pick up your item: {qrCode}. Thank you for choosing RENTECH.",
@@ -116,7 +116,7 @@ export default function AccountSettings() {
 
 
 
-      <main className="flex-1 overflow-y-auto px-6 py-8 space-y-6 scrollbar-thin">
+      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 space-y-6">
         <div className="max-w-[760px] mx-auto space-y-6">
           
           <div>
@@ -124,7 +124,7 @@ export default function AccountSettings() {
             <p className="text-slate-500 text-base mt-1">Manage preferences and system notifications.</p>
           </div>
 
-          <section className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex gap-6">
+          <section className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 sm:p-8">
             <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0">
               <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
@@ -137,7 +137,7 @@ export default function AccountSettings() {
                   {profile.role}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+              <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
                 <div>
                   <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Address</span>
                   <span className="text-slate-800 text-[15px] font-semibold">{profile.email}</span>
@@ -150,24 +150,7 @@ export default function AccountSettings() {
             </div>
           </section>
 
-          <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <h3 className="text-slate-900 font-bold text-base">System Integrations</h3>
-            <div className="space-y-3">
-              {integrations.map((integration) => (
-                <div key={integration.id} className="flex justify-between items-center border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                  <div>
-                    <h4 className="text-[15px] font-bold text-slate-900">{integration.name}</h4>
-                    <p className="text-slate-400 text-[13px] mt-0.5">{integration.desc}</p>
-                  </div>
-                  <span className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-md">
-                    {integration.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+          <section className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-4 sm:p-6">
             <h3 className="text-slate-900 font-bold text-base">SMS Templates</h3>
             
             <div className="space-y-4 pt-2">
@@ -178,8 +161,8 @@ export default function AccountSettings() {
                 { key: 'paymentConfirmation', label: 'Payment Confirmation' }
               ].map((item) => (
                 <div key={item.key} className="border border-slate-200/60 rounded-2xl p-4 bg-white space-y-2">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-[15px] font-bold text-slate-900">{item.label}</h4>
+                   <div className="flex flex-wrap justify-between items-center gap-2">
+                     <h4 className="text-[15px] font-bold text-slate-900">{item.label}</h4>
                     <div className="flex gap-2 text-[13px] font-bold text-rose-600">
                       {editingKey === item.key ? (
                         <>
@@ -215,7 +198,24 @@ export default function AccountSettings() {
             </button>
           </section>
 
-          <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-2">
+          <section className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-3 sm:p-6">
+            <h3 className="text-base font-bold text-slate-900">Integrations</h3>
+            <div className="space-y-3 pt-2">
+              {integrations.map((integration) => (
+                <div key={integration.id} className="flex flex-col gap-3 border border-slate-200/60 rounded-2xl p-4 bg-white sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div>
+                    <h4 className="text-[15px] font-bold text-slate-900">{integration.name}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{integration.desc}</p>
+                  </div>
+                  <span className={`shrink-0 text-[11px] font-bold uppercase tracking-wider rounded-md px-2 py-0.5 ${integration.status === 'Connected' || integration.status === 'Active' ? 'text-emerald-600 bg-emerald-50' : 'text-gray-500 bg-gray-100'}`}>
+                    {integration.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm space-y-2 sm:p-6">
             <h3 className="text-base font-bold text-slate-900">Account Actions</h3>
             <button onClick={handleSignOut} className="flex items-center gap-1.5 px-4 py-2 bg-rose-50/60 text-rose-700 font-bold text-[15px] rounded-xl border border-rose-100/70 hover:bg-rose-100/50 transition mt-2">
               <LogOut className="w-4 h-4" /> Sign Out

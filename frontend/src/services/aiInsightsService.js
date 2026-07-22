@@ -1,6 +1,43 @@
 
 import api from './analyticsApiClient';
 
+const CACHE_KEY = 'ai_insights_cache';
+const CACHE_TTL = 5 * 60 * 1000;
+
+function getCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const { data, timestamp } = JSON.parse(raw);
+      if (Date.now() - timestamp < CACHE_TTL) return data;
+    }
+  } catch {}
+  return null;
+}
+
+function setCache(data) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch {}
+}
+
+export function clearInsightsCache() {
+  try {
+    sessionStorage.removeItem(CACHE_KEY);
+  } catch {}
+}
+
+export function getCacheTimestamp() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const { timestamp } = JSON.parse(raw);
+      return timestamp;
+    }
+  } catch {}
+  return null;
+}
+
 // Generates a mock AI response based on the user's input and available data.
 // Replace this with a real API call later.
 
@@ -85,9 +122,14 @@ export function buildFallbackInsights({ kpis = {}, revenue = [], forecast = [] }
 }
 
 export async function generateReport(data = {}) {
+  const cached = getCache();
+  if (cached) return cached;
+
   try {
     const response = await api.post('/api/ai/insights', { kpis: data.kpis || data });
-    return response.data;
+    const result = response.data;
+    setCache(result);
+    return result;
   } catch {
     const kpis = data.kpis || {};
     const revenue = data.revenue || [];
@@ -95,7 +137,9 @@ export async function generateReport(data = {}) {
 
     const insights = buildFallbackInsights({ kpis, revenue, forecast });
     const report = ['Executive Summary', '', ...insights].join('\n\n');
+    const result = { insights, suggestions: [], report };
 
-    return { insights, suggestions: [], report };
+    setCache(result);
+    return result;
   }
 }

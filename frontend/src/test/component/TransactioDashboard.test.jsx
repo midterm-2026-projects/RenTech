@@ -40,11 +40,11 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
     vi.clearAllMocks();
   });
 
-  it("should render the main headers correctly on load", async () => {
+  it("should render the main controls correctly on load", async () => {
     render(<TransactionDashboard />);
 
-    expect(screen.getByText("Records")).toBeDefined();
-    expect(await screen.findByText("Digital logbook of all rental transactions.")).toBeDefined();
+    expect(screen.getByPlaceholderText("Search by ID, customer, or item...")).toBeDefined();
+    expect(screen.getByText("Export CSV")).toBeDefined();
   });
 
   it("should display the search bar input field with the correct placeholder text", () => {
@@ -55,7 +55,7 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
   it("should render default table column headers properly", () => {
     render(<TransactionDashboard />);
 
-    expect(screen.getByText("ID")).toBeDefined();
+    expect(screen.getByText("Transaction ID")).toBeDefined();
     expect(screen.getByText("Customer")).toBeDefined();
     expect(screen.getByText("Item")).toBeDefined();
     expect(screen.getByText("Status")).toBeDefined();
@@ -69,7 +69,8 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
 
     await user.type(searchInput, "Gatsby Sequin");
 
-    expect(await screen.findByText("Vintage Gatsby Sequin Dress")).toBeDefined();
+    const rows = await screen.findAllByText("Vintage Gatsby Sequin Dress");
+    expect(rows.length).toBeGreaterThan(0);
   });
 
   it("should display a fallback message when a search returns zero results", async () => {
@@ -78,7 +79,8 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
     const searchInput = screen.getByPlaceholderText("Search by ID, customer, or item...");
     await user.type(searchInput, "xyzabc123789");
 
-    expect(await screen.findByText("No records match your tracking filter options.")).toBeDefined();
+    const messages = await screen.findAllByText("No records match your tracking filter options");
+    expect(messages.length).toBeGreaterThan(0);
   });
 
 });

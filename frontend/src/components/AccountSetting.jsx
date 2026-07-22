@@ -87,33 +87,6 @@ export default function AccountSettings() {
             </div>
           </section>
 
-          {/* System Integrations Block */}
-          <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-              <h3 className="text-slate-900">System Integrations</h3>
-            </div>
-            
-            <div className="space-y-3">
-              {/* Semaphore */}
-              <div className="flex justify-between items-center border-b border-slate-50 pb-3">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Semaphore SMS Gateway</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Automated return reminders & booking confirmations.</p>
-                </div>
-                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-md">Connected</span>
-              </div>
-              {/* PayMongo */}
-              <div className="flex justify-between items-center pt-1">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">PayMongo Payments</h4>
-                  <p className="text-slate-400 text-[11px] mt-0.5">Secure GCash & Credit Card downpayments.</p>
-                </div>
-                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-md">Active</span>
-              </div>
-            </div>
-          </section>
-
           {/* SMS Templates Block */}
           <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
             <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">

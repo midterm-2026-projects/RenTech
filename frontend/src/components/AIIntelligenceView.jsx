@@ -102,15 +102,11 @@ export default function AIIntelligenceView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">AI Intelligence</h1>
-          <p className="text-sm text-gray-400">Live analytics &amp; AI-generated business insights</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           onClick={handleExportPdf}
           disabled={exporting}
-          className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+          className="inline-flex items-center space-x-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-50"
         >
           <FileDown className="w-4 h-4" />
           <span>{exporting ? 'Exporting...' : 'Export PDF Report'}</span>
