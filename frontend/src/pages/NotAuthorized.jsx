@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Lock } from 'lucide-react';
 
 const NotAuthorized = () => {
   const navigate = useNavigate();
@@ -6,7 +7,9 @@ const NotAuthorized = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md">
-        <div className="text-6xl mb-4">🔒</div>
+        <div className="text-6xl mb-4 flex justify-center">
+          <Lock className="w-16 h-16 text-gray-400" />
+        </div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Not Authorized</h1>
         <p className="text-gray-500 mb-6">
           You do not have permission to access this page. Please contact your administrator.

@@ -1,12 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Filter } from 'lucide-react';
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
 
 const Transaction = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef(null);
+  const isMobile = useIsMobile();
 
-  // Fetch live transactions from backend API
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterRef.current && !filterRef.current.contains(e.target)) {
+        setFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
@@ -30,81 +55,121 @@ const Transaction = () => {
     fetchTransactions();
   }, []);
 
-  const filteredTransactions = transactions.filter(tx => 
-    (tx.id && tx.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (tx.item && tx.item.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (tx.username && tx.username.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const statuses = ['All', 'Reserved', 'Confirmed', 'Completed', 'Cancelled', 'Overdue', 'Returned'];
+  const filteredTransactions = transactions.filter(tx => {
+    if (statusFilter !== 'All' && tx.status !== statusFilter) return false;
+    const term = searchTerm.toLowerCase();
+    return (tx.id && tx.id.toLowerCase().includes(term)) ||
+           (tx.item && tx.item.toLowerCase().includes(term)) ||
+           (tx.username && tx.username.toLowerCase().includes(term));
+  });
 
   return (
-    <div style={styles.container}>
-      <div style={styles.contentWrapper}>
-        {/* Header Section */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>Transactions</h1>
-          <p style={styles.subtitle}>Track your active and past reservations.</p>
-        </div>
+    <div className="w-full">
+      {/* Header */}
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Transactions</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Track your active and past reservations.</p>
+      </div>
 
-        {/* Search Input Box */}
-        <div style={styles.searchWrapper}>
-          <div style={styles.iconWrapper}>
-            <svg style={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
+      {/* Search + Filter */}
+      <div className="flex items-center gap-3 w-full mb-5 sm:mb-8">
+        <div className="relative flex-1 min-w-0">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             type="text"
             placeholder="Search by ID, customer, or item..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={styles.input}
+            className="w-full pl-11 pr-4 py-2.5 sm:py-3 border border-gray-200 rounded-full text-sm text-gray-700 outline-none bg-white"
           />
         </div>
-
-        {/* Table Card */}
-        <div style={styles.tableCard}>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeaderRow}>
-                <th style={styles.thLeft}>ID</th>
-                <th style={styles.thLeft}>Item</th>
-                <th style={styles.thLeft}>Customer</th>
-                <th style={styles.thLeft}>Date</th>
-                <th style={styles.thLeft}>Status</th>
-                <th style={styles.thRight}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="6" style={styles.noData}>Loading live transactions...</td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan="6" style={{ ...styles.noData, color: '#ef4444' }}>{error}</td>
-                </tr>
-              ) : filteredTransactions.length > 0 ? (
-                filteredTransactions.map((tx) => (
-                  <tr key={tx.id || tx._id} style={styles.tableRow}>
-                    <td style={styles.tdId}>{tx.id}</td>
-                    <td style={styles.tdItem}>{tx.item || tx.itemName}</td>
-                    <td style={styles.tdItem}>{tx.username || 'Customer'}</td>
-                    <td style={styles.tdDate}>{tx.date}</td>
-                    <td style={styles.tdLeft}>
-                      <span style={styles.badge}>{tx.status}</span>
-                    </td>
-                    <td style={styles.tdAmount}>₱{tx.amount || tx.totalCost}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" style={styles.noData}>No transactions found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="relative shrink-0" ref={filterRef}>
+          <button
+            onClick={() => setFilterOpen(!filterOpen)}
+            className="flex items-center justify-center w-[45px] h-[45px] bg-white border border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 transition"
+          >
+            <Filter className="w-[18px] h-[18px] text-gray-500" />
+          </button>
+          {filterOpen && (
+            <div className="absolute top-[52px] right-0 bg-white rounded-2xl shadow-lg border border-gray-100 p-3 w-[160px] z-50">
+              <div className="text-[11px] font-bold text-gray-400 tracking-wide px-3 pb-1.5">STATUS</div>
+              {statuses.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => { setStatusFilter(s); setFilterOpen(false); }}
+                  className={`w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition cursor-pointer ${
+                    statusFilter === s ? 'bg-rose-500 text-white' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Table / Cards */}
+      {loading ? (
+        <div className="text-center py-10 text-sm text-gray-400">Loading live transactions...</div>
+      ) : error ? (
+        <div className="text-center py-10 text-sm text-red-500">{error}</div>
+      ) : filteredTransactions.length > 0 ? (
+        isMobile ? (
+          <div className="space-y-3">
+            {filteredTransactions.map((tx) => (
+              <div key={tx.id || tx._id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-gray-900">{tx.id}</span>
+                  <span className="text-xs font-bold text-gray-900">₱{tx.amount || tx.totalCost}</span>
+                </div>
+                <div className="text-sm text-gray-600 mb-1">{tx.item || tx.itemName}</div>
+                <div className="flex items-center justify-between text-xs text-gray-400">
+                  <span>{tx.username || 'Customer'}</span>
+                  <span>{tx.date}</span>
+                </div>
+                <div className="mt-2">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-600">{tx.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full border border-gray-100 rounded-2xl overflow-x-auto bg-white">
+            <table className="w-full border-collapse text-left">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">ID</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Item</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Customer</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Date</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500">Status</th>
+                  <th className="px-4 sm:px-6 py-4 text-xs font-semibold text-gray-500 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTransactions.map((tx) => (
+                  <tr key={tx.id || tx._id} className="border-b border-gray-50">
+                    <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900">{tx.id}</td>
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.item || tx.itemName}</td>
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.username || 'Customer'}</td>
+                    <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">{tx.date}</td>
+                    <td className="px-4 sm:px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-600">{tx.status}</span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-sm font-bold text-gray-900 text-right">₱{tx.amount || tx.totalCost}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      ) : (
+        <div className="text-center py-10 text-sm text-gray-400">No transactions found.</div>
+      )}
     </div>
   );
 };

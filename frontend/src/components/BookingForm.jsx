@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ShoppingBag, Smartphone, CreditCard } from 'lucide-react';
 import DatePicker from './DatePicker'; 
 
 export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 4500, itemName = 'Emerald Silk Mermaid Evening Gown' }) {
@@ -22,6 +23,8 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
     downpayment: minDownpayment
   });
 
+  const [errors, setErrors] = useState({});
+
   const balance = price - formData.downpayment;
 
   const handleToggleUser = (userType) => {
@@ -35,11 +38,36 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleDownpaymentChange = (e) => {
     const value = Math.max(minDownpayment, Math.min(price, Number(e.target.value)));
     setFormData(prev => ({ ...prev, downpayment: value }));
+  };
+
+  const validateStep1 = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required.';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required.';
+    } else if (!/^09\d{9}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Enter a valid 11-digit number starting with 09.';
+    }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required.';
+    }
+    if (!selectedDate) {
+      newErrors.date = 'Rental date is required.';
+    } else if (selectedDate < new Date().toISOString().split('T')[0]) {
+      newErrors.date = 'Date must be today or later.';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const formatReadableDate = (dateString) => {
@@ -87,11 +115,11 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
           {step === 1 && (
             <div>
               <div style={styles.productCard}>
-                <div style={styles.productImgMock}>👗</div>
+                <div style={styles.productImgMock}><ShoppingBag style={{ width: '24px', height: '24px' }} /></div>
                 <div>
                   <div style={styles.productName}>{itemName}</div>
                   <div style={styles.productDate}>Date: {formatReadableDate(selectedDate)}</div>
-                  <div style={styles.productPrice}>₱{price.toLocaleString()}</div>
+                  <div style={styles.productPrice}>₱{Number(price || 0).toLocaleString()}</div>
                 </div>
               </div>
 
@@ -119,26 +147,33 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
                 placeholder="Full Name"
                 value={formData.name} 
                 onChange={handleInputChange}
-                style={{...styles.selectField, backgroundColor: '#fafafa', marginBottom: '12px', fontWeight: '500'}} 
+                style={{...styles.selectField, backgroundColor: '#fafafa', marginBottom: '4px', fontWeight: '500', borderColor: errors.name ? '#e53e3e' : '#e8e8e8'}} 
               />
+              {errors.name && <p style={styles.errorText}>{errors.name}</p>}
 
               <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-                <input 
-                  type="text" 
-                  name="phone"
-                  placeholder="Phone Number"
-                  value={formData.phone} 
-                  onChange={handleInputChange}
-                  style={styles.selectField}
-                />
-                <input 
-                  type="text" 
-                  name="address"
-                  placeholder="Address"
-                  value={formData.address} 
-                  onChange={handleInputChange}
-                  style={styles.selectField}
-                />
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="text" 
+                    name="phone"
+                    placeholder="Phone Number"
+                    value={formData.phone} 
+                    onChange={handleInputChange}
+                    style={{...styles.selectField, borderColor: errors.phone ? '#e53e3e' : '#e8e8e8'}} 
+                  />
+                  {errors.phone && <p style={styles.errorText}>{errors.phone}</p>}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input 
+                    type="text" 
+                    name="address"
+                    placeholder="Address"
+                    value={formData.address} 
+                    onChange={handleInputChange}
+                    style={{...styles.selectField, borderColor: errors.address ? '#e53e3e' : '#e8e8e8'}} 
+                  />
+                  {errors.address && <p style={styles.errorText}>{errors.address}</p>}
+                </div>
               </div>
 
               <textarea 
@@ -151,9 +186,13 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
 
               <DatePicker 
                 selectedDate={selectedDate} 
-                onDateChange={setSelectedDate} 
+                onDateChange={(date) => {
+                  setSelectedDate(date);
+                  if (errors.date) setErrors(prev => ({ ...prev, date: '' }));
+                }} 
                 label="RENTAL DATE"
               />
+              {errors.date && <p style={styles.errorText}>{errors.date}</p>}
 
               <label style={styles.fieldLabel}>SIZE</label>
               <select name="size" value={formData.size} onChange={handleInputChange} style={styles.selectField}>
@@ -193,7 +232,7 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
                   onClick={() => setFormData({...formData, paymentMethod: 'GCash'})}
                   style={{...styles.paymentCard, ...(formData.paymentMethod === 'GCash' ? styles.paymentCardActive : {})}}
                 >
-                  <div style={{fontSize: '24px', marginBottom: '4px'}}>📱</div>
+                  <Smartphone style={{ width: '28px', height: '28px', marginBottom: '4px' }} />
                   <div>GCash</div>
                 </div>
                 <div 
@@ -201,7 +240,7 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
                   onClick={() => setFormData({...formData, paymentMethod: 'Card'})}
                   style={{...styles.paymentCard, ...(formData.paymentMethod === 'Card' ? styles.paymentCardActive : {})}}
                 >
-                  <div style={{fontSize: '24px', marginBottom: '4px'}}>💳</div>
+                  <CreditCard style={{ width: '28px', height: '28px', marginBottom: '4px' }} />
                   <div>Card</div>
                 </div>
               </div>
@@ -249,6 +288,7 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
               <button style={styles.btnCancel} onClick={onClose}>Cancel</button>
               <button 
                 onClick={async () => {
+                  if (step === 1 && !validateStep1()) return;
                   if (step === 2) {
                     try {
                       const response = await fetch('http://localhost:5000/api/transactions', {
@@ -341,6 +381,7 @@ const styles = {
   paymentCard: { flex: 1, border: '1px solid #e5e5e5', borderRadius: '14px', padding: '16px', textAlign: 'center', cursor: 'pointer', fontWeight: '600', fontSize: '14px' },
   paymentCardActive: { borderColor: '#b94a48', backgroundColor: '#fff5f5' },
   summaryNoticeBox: { backgroundColor: '#f8f9fa', padding: '14px', borderRadius: '12px', marginTop: '16px' },
+  errorText: { color: '#e53e3e', fontSize: '11px', margin: '0 0 8px 0', fontWeight: '500' },
   receiptCard: { border: '1px solid #f0f0f0', borderRadius: '14px', padding: '14px', textAlign: 'left', backgroundColor: '#fff' },
   receiptTable: { width: '100%', fontSize: '13px', borderCollapse: 'collapse' },
   footer: { padding: '16px 24px 24px 24px', borderTop: '1px solid #f7f7f7', display: 'flex', gap: '12px' },

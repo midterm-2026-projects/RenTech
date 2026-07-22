@@ -1,16 +1,37 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X, User } from "lucide-react";
+import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X, User, ShoppingBag } from "lucide-react";
 import { clearSession } from "./Login";
 
-export default function Sidebar({ currentTab, onTabChange }) {
+const VARIANTS = {
+  admin: {
+    profile: { name: "Admin", role: "Administrator" },
+    statusName: "Admin User",
+    navItems: [
+      { key: "dashboard", label: "Dashboard", icon: LayoutGrid },
+      { key: "inventory", label: "Inventory", icon: ClipboardList },
+      { key: "transactions", label: "Transactions", icon: Clock },
+      { key: "ai intelligence", label: "AI Intelligence", icon: Sparkles, badge: true },
+      { key: "settings", label: "System Settings", icon: Settings },
+    ],
+  },
+  customer: {
+    profile: { name: "Maria Santos", role: "Customer" },
+    statusName: "Maria Santos",
+    navItems: [
+      { key: "Collection", label: "Collection", icon: LayoutGrid },
+      { key: "Transactions", label: "Transactions", icon: Clock },
+    ],
+  },
+};
+
+export default function Sidebar({ currentTab, onTabChange, variant = "admin" }) {
   const navigate = useNavigate();
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const config = VARIANTS[variant] || VARIANTS.admin;
 
   const getButtonStyles = (tabName) => {
     const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium transition cursor-pointer text-left text-sm";
-    
-    // Check using lowercase strings to match the routing state
     if (currentTab === tabName) {
       return `${baseStyle} bg-rose-50/50 text-rose-600`;
     }
@@ -29,85 +50,50 @@ export default function Sidebar({ currentTab, onTabChange }) {
 
   return (
     <>
-      {/* Container structured to fill the layout frame */}
       <aside className="w-full bg-gradient-to-b from-rose-50/50 to-white rounded-2xl border border-rose-100/50 text-gray-700 px-5 py-6 flex flex-col justify-between font-sans h-full shadow-md">
         <div>
-          {/* Top Admin Profile Section */}
+          {/* Profile Section */}
           <div className="flex items-center space-x-3 mb-5 px-1">
             <div className="w-10 h-10 rounded-full border border-rose-100/50 flex items-center justify-center overflow-hidden bg-rose-50 shadow-sm">
-              <div className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center text-white">
-                <User className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center text-white text-sm">
+                {variant === "customer" ? <ShoppingBag className="w-4 h-4" /> : <User className="w-4 h-4" />}
               </div>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 text-base leading-none">Admin</h4>
-              <p className="text-xs text-rose-500 mt-0.5">Administrator</p>
+              <h4 className="font-semibold text-gray-900 text-base leading-none">{config.profile.name}</h4>
+              <p className="text-xs text-rose-500 mt-0.5">{config.profile.role}</p>
             </div>
           </div>
 
-          {/* Sidebar Navigation Buttons */}
+          {/* Navigation */}
           <nav className="space-y-1.5">
-            {/* Dashboard */}
-            <button 
-              onClick={() => onTabChange("dashboard")}
-              className={getButtonStyles("dashboard")}
-            >
-              <LayoutGrid className={getIconStyles("dashboard")} />
-              <span>Dashboard</span>
-            </button>
-
-            {/* Inventory */}
-            <button 
-              onClick={() => onTabChange("inventory")}
-              className={getButtonStyles("inventory")}
-            >
-              <ClipboardList className={getIconStyles("inventory")} />
-              <span>Inventory</span>
-            </button>
-
-            {/* Transactions */}
-            <button 
-              onClick={() => onTabChange("transactions")}
-              className={getButtonStyles("transactions")}
-            >
-              <Clock className={getIconStyles("transactions")} />
-              <span>Transactions</span>
-            </button>
-
-            {/* AI Intelligence */}
-            <button 
-              onClick={() => onTabChange("ai intelligence")}
-              className={`${getButtonStyles("ai intelligence")} justify-between`}
-            >
-              <div className="flex items-center space-x-2.5">
-                <Sparkles className={getIconStyles("ai intelligence")} />
-                <span>AI Intelligence</span>
-              </div>
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            </button>
-
-            {/* System Settings */}
-            <button 
-              onClick={() => onTabChange("settings")}
-              className={getButtonStyles("settings")}
-            >
-              <Settings className={getIconStyles("settings")} />
-              <span>System Settings</span>
-            </button>
+            {config.navItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => onTabChange(item.key)}
+                className={`${getButtonStyles(item.key)}${item.badge ? " justify-between" : ""}`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <item.icon className={getIconStyles(item.key)} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>}
+              </button>
+            ))}
           </nav>
         </div>
 
-        {/* Bottom Status & Actions Container */}
+        {/* Bottom Status & Actions */}
         <div className="space-y-3 pt-4 border-t border-gray-100/60">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-full border border-rose-100/50 flex items-center justify-center overflow-hidden bg-rose-50">
-                <div className="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white">
-                  <User className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs">
+                  {variant === "customer" ? <ShoppingBag className="w-4 h-4" /> : <User className="w-4 h-4" />}
                 </div>
               </div>
               <div>
-                <h5 className="font-semibold text-gray-900 text-sm leading-none">Admin User</h5>
+                <h5 className="font-semibold text-gray-900 text-sm leading-none">{config.statusName}</h5>
                 <p className="text-xs text-rose-500 mt-0.5">Online</p>
               </div>
             </div>
@@ -117,8 +103,7 @@ export default function Sidebar({ currentTab, onTabChange }) {
             </div>
           </div>
 
-          {/* Sign Out Action Button */}
-          <button 
+          <button
             onClick={() => setShowSignOutModal(true)}
             className="group w-full flex items-center space-x-2.5 px-3 py-2.5 text-gray-600 hover:bg-rose-50/60 hover:text-rose-600 rounded-lg transition-all duration-200 cursor-pointer text-left font-medium text-sm"
           >
@@ -128,24 +113,22 @@ export default function Sidebar({ currentTab, onTabChange }) {
         </div>
       </aside>
 
-      {/* Sign Out Confirmation Modal Overlay */}
+      {/* Sign Out Confirmation Modal */}
       {showSignOutModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-in fade-in zoom-in duration-150">
-            <button 
+            <button
               onClick={() => setShowSignOutModal(false)}
               className="absolute top-4 right-4 p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 cursor-pointer transition"
             >
               <X className="w-4 h-4" />
             </button>
-
             <div className="mb-6">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Sign Out</h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 Are you sure you want to sign out? You will be returned to the landing page.
               </p>
             </div>
-
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowSignOutModal(false)}
