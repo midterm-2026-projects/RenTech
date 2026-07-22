@@ -6,19 +6,20 @@ const LoadingSkeleton = ({ variant = 'chart', count = 3, loading = true }) => {
   if (variant === 'card') {
     return (
       <div
-        className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4"
         data-testid="skeleton-cards"
       >
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}
-            className="p-6 border border-gray-200 rounded-lg shadow-sm bg-white flex items-center justify-between animate-pulse"
+            className="border border-gray-200 rounded-xl bg-white p-4 animate-pulse"
           >
-            <div className="space-y-2">
-              <div className="h-3 w-20 bg-gray-200 rounded" />
-              <div className="h-6 w-16 bg-gray-300 rounded" />
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-2 h-2 rounded-full bg-gray-200" />
+              <div className="w-7 h-7 rounded-lg bg-gray-200" />
             </div>
-            <div className="w-12 h-12 rounded-full bg-gray-200" />
+            <div className="h-3 w-16 bg-gray-200 rounded mb-2" />
+            <div className="h-6 w-20 bg-gray-300 rounded" />
           </div>
         ))}
       </div>
@@ -41,11 +42,13 @@ const LoadingSkeleton = ({ variant = 'chart', count = 3, loading = true }) => {
   // chart (default)
   return (
     <div
-      className="w-full h-96 p-6 border border-gray-200 rounded-lg shadow-sm bg-white animate-pulse"
+      className="w-full border border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden animate-pulse"
       data-testid="skeleton-chart"
     >
-      <div className="h-6 w-48 bg-gray-200 rounded mb-6" />
-      <div className="h-[70%] w-full bg-gray-100 rounded" />
+      <div className="bg-gray-200 h-11" />
+      <div className="p-6">
+        <div className="h-[70%] w-full bg-gray-100 rounded" />
+      </div>
     </div>
   );
 };

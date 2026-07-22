@@ -1,3 +1,4 @@
+import { BarChart3 } from 'lucide-react';
 import {
   Bar, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -42,21 +43,28 @@ const RevenueVsProjection = ({ revenueData = [], projectionData = [] }) => {
   if (!data.length) return null;
 
   return (
-    <div className="w-full p-6 border border-gray-100 rounded-2xl shadow-sm bg-white" data-testid="revenue-vs-projection-chart">
-      <h2 className="text-lg font-bold text-gray-800 mb-1">Revenue vs. Projection</h2>
-      <p className="text-xs text-gray-400 mb-4">Actual rental revenue against forecast</p>
-      <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-          <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-          <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={64} />
-          <Tooltip content={<ProjectionTooltip />} cursor={{ fill: '#f8fafc' }} />
-          <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="revenue" fill="#e11d48" radius={[4, 4, 0, 0]} name="Actual Revenue" />
-          <Bar dataKey="projected" fill="#6366f1" radius={[4, 4, 0, 0]} name="Projected Revenue" />
-          <Line type="monotone" dataKey="actualProjected" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} name="Projected Actual" connectNulls />
-        </ComposedChart>
-      </ResponsiveContainer>
+    <div className="w-full border border-gray-200 rounded-xl shadow-sm bg-white overflow-hidden" data-testid="revenue-vs-projection-chart">
+      <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-6 py-3">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-white" />
+          <h2 className="text-sm font-bold text-white">Revenue vs. Projection</h2>
+        </div>
+        <p className="text-xs text-rose-200 mt-0.5">Actual rental revenue against forecast</p>
+      </div>
+      <div className="p-6">
+        <ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+            <YAxis tickFormatter={(v) => `₱${v}`} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} width={64} />
+            <Tooltip content={<ProjectionTooltip />} cursor={{ fill: '#f8fafc' }} />
+            <Legend verticalAlign="top" height={28} wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey="revenue" fill="#e11d48" radius={[4, 4, 0, 0]} name="Actual Revenue" />
+            <Bar dataKey="projected" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Projected Revenue" />
+            <Line type="monotone" dataKey="actualProjected" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} name="Projected Actual" connectNulls />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

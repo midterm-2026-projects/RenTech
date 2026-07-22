@@ -60,7 +60,7 @@ const AdminContent = () => {
   const renderViewContent = () => {
     switch (currentTab) {
       case 'dashboard':
-        return <LiveAdminDashboard />;
+        return <LiveAdminDashboard onTabChange={onTabChange} />;
       case 'inventory':
         return <InventoryManagement />;
       case 'ai intelligence':
@@ -120,29 +120,32 @@ const AdminContent = () => {
       )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 shadow-sm shrink-0">
-          <div className="px-6 py-4 flex items-center gap-3">
+        <header className="bg-gradient-to-r from-slate-800 to-slate-900 shrink-0">
+          <div className="flex items-center gap-3 px-4 sm:px-6 py-3 sm:py-3.5">
             <button
               type="button"
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100 cursor-pointer"
+              className="md:hidden p-2 -ml-2 rounded-lg text-slate-300 hover:bg-slate-700/50 cursor-pointer"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-rose-500">
-                Admin Portal
-              </p>
-              <div className="flex items-baseline justify-between gap-3">
-                <h1 className="text-2xl font-bold text-gray-800">{meta.title}</h1>
-                <p className="hidden md:block text-sm text-gray-400">{meta.subtitle}</p>
+            <div className="min-w-0 flex-1 flex items-center gap-3 sm:gap-4">
+              <div className="hidden sm:block w-1 h-8 rounded-full bg-rose-500 shrink-0" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Admin Portal
+                </p>
+                <h1 className="text-sm sm:text-base lg:text-lg font-bold text-white truncate">{meta.title}</h1>
               </div>
             </div>
+            <p className="hidden md:block text-xs text-slate-400 truncate max-w-[320px] text-right ml-auto">
+              {meta.subtitle}
+            </p>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {renderViewContent()}
         </main>
       </div>

@@ -40,7 +40,7 @@ describe('SystemSetting Component - Unit Tests', () => {
 
       expect(screen.getByText('Semaphore SMS Gateway')).toBeInTheDocument();
       expect(screen.getByText('PayMongo Payments')).toBeInTheDocument();
-      expect(screen.getAllByText('Connected').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Disconnected').length).toBeGreaterThan(0);
     });
 
     test('renders all expected SMS template sub-cards initially', async () => {

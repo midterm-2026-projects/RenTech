@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
-  Boxes, CheckCircle2, AlertTriangle, PackageX, Trash2, Search
+  Boxes, CheckCircle2, AlertTriangle, PackageX, Trash2, Search, Package
 } from 'lucide-react';
 import { getProducts, softDeleteProduct } from '../services/inventoryApiClient';
 import SmartInventoryOptimization from './SmartInventoryOptimization';
@@ -53,6 +53,17 @@ const InventoryManagement = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPage(1);
   }, []);
+
+  // Auto-refresh when the tab regains focus (user switches back).
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible') loadPage(page); };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [page, loadPage]);
 
   // Re-fetch (resetting to page 1) when the user changes the search or status
   // filter, debounced so we don't hit the API on every keystroke.
@@ -123,66 +134,91 @@ const InventoryManagement = () => {
 
   const { countByStatus, metrics } = derived;
 
-  const stats = [
-    { label: 'Total Items', value: total, Icon: Boxes, tone: 'text-slate-600 bg-slate-100' },
-    { label: 'Available', value: countByStatus.Available || 0, Icon: CheckCircle2, tone: 'text-emerald-600 bg-emerald-100' },
-    { label: 'Out (Rented/Overdue)', value: (countByStatus.Rented || 0) + (countByStatus.Overdue || 0), Icon: AlertTriangle, tone: 'text-sky-600 bg-sky-100' },
-    { label: 'Needs Attention', value: (countByStatus.Maintenance || 0) + (countByStatus.Overdue || 0), Icon: PackageX, tone: 'text-rose-600 bg-rose-100' },
-  ];
+  const STAT_STYLES = {
+    'Total Items': { bg: 'bg-rose-50', border: 'border-rose-200', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
+    'Available': { bg: 'bg-emerald-50', border: 'border-emerald-200', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+    'Rented Out': { bg: 'bg-sky-50', border: 'border-sky-200', iconBg: 'bg-sky-100', iconColor: 'text-sky-600' },
+    'Needs Attention': { bg: 'bg-amber-50', border: 'border-amber-200', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+  };
+
+  const STAT_ICONS = {
+    'Total Items': Boxes,
+    'Available': CheckCircle2,
+    'Rented Out': AlertTriangle,
+    'Needs Attention': PackageX,
+  };
+
+  const STAT_LABELS = ['Total Items', 'Available', 'Rented Out', 'Needs Attention'];
 
   return (
     <div className="space-y-6">
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(({ label, value, Icon, tone }) => (
-          <div key={label} className="p-5 rounded-2xl border border-gray-100 bg-white shadow-sm">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${tone}`}>
-              <Icon className="w-5 h-5" />
+        {STAT_LABELS.map((label) => {
+          const s = STAT_STYLES[label];
+          const Icon = STAT_ICONS[label];
+          const val = label === 'Total Items' ? total
+            : label === 'Available' ? (countByStatus.Available || 0)
+            : label === 'Rented Out' ? (countByStatus.Rented || 0)
+            : (countByStatus.Maintenance || 0) + (countByStatus.Overdue || 0);
+          return (
+            <div key={label} className={`${s.bg} ${s.border} border rounded-xl shadow-sm p-3 sm:p-5 flex flex-col justify-between`}>
+              <div className="flex items-center justify-between gap-1">
+                <p className="text-sm sm:text-base font-medium text-gray-500">{label}</p>
+                <span className={`p-1 sm:p-1.5 rounded-lg shrink-0 ${s.iconBg}`}>
+                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${s.iconColor}`} />
+                </span>
+              </div>
+              <p className="text-xl sm:text-3xl font-bold text-gray-800">{val}</p>
             </div>
-            <p className="mt-3 text-2xl font-bold text-gray-800">{value}</p>
-            <p className="text-xs text-gray-400">{label}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="space-y-6">
         {/* Stock table */}
-        <div className="p-6 rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-gray-800">Stock Levels</h2>
-              <p className="text-xs text-gray-400 mt-0.5 mb-4">Current inventory by item and status</p>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 px-4 sm:px-6 py-3 overflow-hidden rounded-t-xl">
+            <div className="flex items-center gap-2">
+              <span className="p-1 sm:p-1.5 rounded-lg bg-white/20">
+                <Package className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              </span>
+              <h2 className="text-sm sm:text-base font-bold text-white">Stock Levels</h2>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search items…"
-                  aria-label="Search inventory"
-                  className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 w-44"
-                />
+          </div>
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <p className="text-sm text-gray-400">Current inventory by item and status</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full sm:w-auto">
+                <div className="relative w-full sm:w-auto">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search items…"
+                    aria-label="Search inventory"
+                    className="pl-8 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200 w-full sm:w-44"
+                  />
+                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Filter by status"
+                  className="w-full sm:w-auto px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                >
+                  <option value="">All statuses</option>
+                  {statusOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                aria-label="Filter by status"
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-rose-200"
-              >
-                <option value="">All statuses</option>
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
             </div>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs text-gray-400">
-              {total} item{total === 1 ? '' : 's'} · Page {page} of {totalPages}
-            </span>
-          </div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-gray-400">
+                {total} item{total === 1 ? '' : 's'} · Page {page} of {totalPages}
+              </span>
+            </div>
 
           {loading && (
             <p className="py-6 text-center text-gray-400">Loading inventory…</p>
@@ -209,7 +245,7 @@ const InventoryManagement = () => {
                       <td className="py-3 pr-4 text-gray-500">{p.category || '—'}</td>
                       <td className="py-3 pr-4 text-gray-600">₱{(Number(p.price) || 0).toLocaleString()}</td>
                       <td className="py-3">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_STYLES[p.status] || STATUS_STYLES.default}`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-sm font-medium border ${STATUS_STYLES[p.status] || STATUS_STYLES.default}`}>
                           {p.status}
                         </span>
                       </td>
@@ -219,7 +255,7 @@ const InventoryManagement = () => {
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
                           aria-label={`Delete ${p.name}`}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-sm rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           {deletingId === p.id ? 'Deleting…' : 'Delete'}
@@ -274,6 +310,7 @@ const InventoryManagement = () => {
               </button>
             </div>
           )}
+        </div>
         </div>
 
       </div>

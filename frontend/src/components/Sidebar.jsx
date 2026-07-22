@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X } from "lucide-react";
+import { LayoutGrid, ClipboardList, Clock, Sparkles, Settings, LogOut, X, User } from "lucide-react";
 import { clearSession } from "./Login";
 
 export default function Sidebar({ currentTab, onTabChange }) {
@@ -8,13 +8,13 @@ export default function Sidebar({ currentTab, onTabChange }) {
   const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   const getButtonStyles = (tabName) => {
-    const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer text-left text-xs";
+    const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium transition cursor-pointer text-left text-sm";
     
     // Check using lowercase strings to match the routing state
     if (currentTab === tabName) {
-      return `${baseStyle} bg-rose-50/60 text-rose-500`;
+      return `${baseStyle} bg-rose-50/50 text-rose-600`;
     }
-    return `${baseStyle} text-gray-500 hover:bg-gray-50 hover:text-gray-900`;
+    return `${baseStyle} text-gray-600 hover:bg-rose-50/50 hover:text-rose-600`;
   };
 
   const getIconStyles = (tabName) => {
@@ -30,23 +30,23 @@ export default function Sidebar({ currentTab, onTabChange }) {
   return (
     <>
       {/* Container structured to fill the layout frame */}
-      <aside className="w-full bg-white text-gray-700 p-3 flex flex-col justify-between font-sans h-full">
+      <aside className="w-full bg-gradient-to-b from-rose-50/50 to-white rounded-2xl border border-rose-100/50 text-gray-700 px-5 py-6 flex flex-col justify-between font-sans h-full shadow-md">
         <div>
           {/* Top Admin Profile Section */}
-          <div className="flex items-center space-x-2.5 mb-3">
-            <div className="w-8 h-8 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50 shadow-sm">
-              <div className="w-6 h-6 rounded-full bg-[#801818] flex items-center justify-center text-white text-[10px] font-serif">
-                👗
+          <div className="flex items-center space-x-3 mb-5 px-1">
+            <div className="w-10 h-10 rounded-full border border-rose-100/50 flex items-center justify-center overflow-hidden bg-rose-50 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center text-white">
+                <User className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <h4 className="font-bold text-gray-900 text-xs leading-none">Admin</h4>
-              <p className="text-[10px] text-gray-400 mt-0.5">Admin</p>
+              <h4 className="font-semibold text-gray-900 text-base leading-none">Admin</h4>
+              <p className="text-xs text-rose-500 mt-0.5">Administrator</p>
             </div>
           </div>
 
           {/* Sidebar Navigation Buttons */}
-          <nav className="space-y-0.5">
+          <nav className="space-y-1.5">
             {/* Dashboard */}
             <button 
               onClick={() => onTabChange("dashboard")}
@@ -98,28 +98,31 @@ export default function Sidebar({ currentTab, onTabChange }) {
         </div>
 
         {/* Bottom Status & Actions Container */}
-        <div className="space-y-2 pt-2 border-t border-gray-100">
+        <div className="space-y-3 pt-4 border-t border-gray-100/60">
           <div className="flex items-center justify-between px-1">
-            <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-full border border-gray-100 flex items-center justify-center overflow-hidden bg-gray-50">
-                <div className="w-5 h-5 rounded-full bg-[#801818] flex items-center justify-center text-white text-[8px]">
-                  👗
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-full border border-rose-100/50 flex items-center justify-center overflow-hidden bg-rose-50">
+                <div className="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white">
+                  <User className="w-4 h-4" />
                 </div>
               </div>
               <div>
-                <h5 className="font-semibold text-gray-800 text-[10px] leading-none">Admin User</h5>
-                <p className="text-[8px] text-gray-400 mt-0.5">Online</p>
+                <h5 className="font-semibold text-gray-900 text-sm leading-none">Admin User</h5>
+                <p className="text-xs text-rose-500 mt-0.5">Online</p>
               </div>
             </div>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-200"></span>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-200/50"></span>
+              <span className="text-[11px] text-emerald-600 font-medium">Active</span>
+            </div>
           </div>
 
           {/* Sign Out Action Button */}
           <button 
             onClick={() => setShowSignOutModal(true)}
-            className="w-full flex items-center space-x-2 px-3 py-1 text-gray-500 hover:text-rose-500 font-medium text-xs transition cursor-pointer text-left"
+            className="group w-full flex items-center space-x-2.5 px-3 py-2.5 text-gray-600 hover:bg-rose-50/60 hover:text-rose-600 rounded-lg transition-all duration-200 cursor-pointer text-left font-medium text-sm"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>Sign Out</span>
           </button>
         </div>

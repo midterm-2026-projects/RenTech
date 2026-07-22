@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Search, Filter, Download, ArrowLeft, ArrowRight, Undo2 } from 'lucide-react';
 import { getTransactions, updateTransactionStatus } from '../services/inventoryApiClient';
 
 const PAGE_SIZE = 10;
 
-// Render any stored date (ISO "2026-07-21" or locale "Jul 21, 2026") in a
-// single consistent display format so the table never shows mixed formats.
 function formatTransactionDate(raw) {
   if (!raw) return '—';
   const d = new Date(raw);
@@ -12,31 +11,22 @@ function formatTransactionDate(raw) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function TransactionDashboard() {
-  const [searchText, setSearchText] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [userRole] = useState(() => {
-    try {
-      const saved = localStorage.getItem('rentech_session');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.role) return parsed.role;
-      }
-    } catch {
-      // ignore malformed session
-    }
-    return 'Admin';
-  });
+const STATUS_STYLES = {
+  Confirmed: 'bg-rose-100 text-rose-700',
+  Reserved: 'bg-blue-100 text-blue-700',
+  Overdue: 'bg-rose-200 text-rose-800',
+  Completed: 'bg-blue-100 text-blue-700',
+  Cancelled: 'bg-gray-100 text-gray-500',
+  Returned: 'bg-rose-100 text-rose-700',
+};
 
+export default function TransactionDashboard() {
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState({
-    Confirmed: false,
-    Reserved: false,
-    Overdue: false,
-    Completed: false,
-    Cancelled: false
+    Confirmed: false, Reserved: false, Overdue: false, Completed: false, Cancelled: false
   });
-
   const [transactions, setTransactions] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -44,15 +34,12 @@ export default function TransactionDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Debounce the search input so we don't hit the API on every keystroke.
-  useEffect(function () {
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchText), 300);
     return () => clearTimeout(t);
   }, [searchText]);
 
-  const activeStatuses = Object.keys(selectedStatuses).filter(
-    (key) => selectedStatuses[key]
-  );
+  const activeStatuses = Object.keys(selectedStatuses).filter((key) => selectedStatuses[key]);
   const statusParam = activeStatuses.join(',');
 
   const loadTransactions = useCallback(async (nextPage) => {
@@ -60,10 +47,7 @@ export default function TransactionDashboard() {
     setError(null);
     try {
       const res = await getTransactions({
-        page: nextPage,
-        limit: PAGE_SIZE,
-        search: debouncedSearch,
-        status: statusParam,
+        page: nextPage, limit: PAGE_SIZE, search: debouncedSearch, status: statusParam,
       });
       setTransactions(res.data || []);
       setTotal(res.total || 0);
@@ -77,305 +61,398 @@ export default function TransactionDashboard() {
     }
   }, [debouncedSearch, statusParam]);
 
-  // Reload page 1 whenever the search term or status filter changes.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTransactions(1);
   }, [loadTransactions]);
+
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible') loadTransactions(page); };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [page, loadTransactions]);
 
   async function handleReturnClick(idToUpdate) {
     try {
       await updateTransactionStatus(idToUpdate, 'Returned');
       setTransactions((prev) =>
-        prev.map((t) =>
-          t.id === idToUpdate ? { ...t, status: 'Returned' } : t
-        )
+        prev.map((t) => (t.id === idToUpdate ? { ...t, status: 'Returned' } : t))
       );
-      alert("Item status updated to Returned!");
+      alert('Item status updated to Returned!');
     } catch {
-      alert("Failed to update status. Please try again.");
+      alert('Failed to update status. Please try again.');
     }
   }
 
   async function handleExport() {
     try {
-      const res = await getTransactions({
-        page: 1,
-        limit: 1000,
-        search: debouncedSearch,
-        status: statusParam,
-      });
+      const res = await getTransactions({ page: 1, limit: 1000, search: debouncedSearch, status: statusParam });
       const rows = res.data || [];
-      if (!rows.length) {
-        alert('No records to export.');
-        return;
-      }
+      if (!rows.length) { alert('No records to export.'); return; }
       const header = ['ID', 'Customer', 'Item', 'Date', 'Status', 'Amount'];
-      const body = rows.map((r) => [
-        r.id,
-        r.username,
-        r.itemName,
-        r.date,
-        r.status,
-        `₱${Number(r.totalCost || 0).toLocaleString()}`,
-      ]);
+      const body = rows.map((r) => [r.id, r.username, r.itemName, r.date, r.status, `₱${Number(r.totalCost || 0).toLocaleString()}`]);
       downloadCSV('transactions.csv', [header, ...body]);
     } catch {
       alert('Failed to export transactions. Please try again.');
     }
   }
 
-  function handleCheckboxChange(statusKey) {
-    setSelectedStatuses((prev) => ({
-      ...prev,
-      [statusKey]: !prev[statusKey]
-    }));
-  }
-
-  function renderTableRows() {
-    const tableRowsHtml = [];
-
-    for (let i = 0; i < transactions.length; i++) {
-      const item = transactions[i];
-
-      let actionElement;
-      if (userRole === "Customer") {
-        actionElement = <span style={{ color: '#cbd5e1', fontSize: '13px' }}>None</span>;
-      } else if (item.status === "Returned") {
-        actionElement = (
-          <button
-            disabled
-            style={{ border: 'none', backgroundColor: '#f1f5f9', color: '#cbd5e1', width: '32px', height: '32px', borderRadius: '50%', cursor: 'not-allowed', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Already returned"
-          >
-            ↩
-          </button>
-        );
-      } else {
-        actionElement = (
-          <button
-            onClick={function () { handleReturnClick(item.id); }}
-            style={{ border: 'none', backgroundColor: '#fff5f5', color: '#e05656', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Process Return Modification"
-          >
-            ↩
-          </button>
-        );
-      }
-
-      let statusBgColor = '#ecfdf5';
-      let statusTextColor = '#059669';
-      if (item.status === 'Returned') {
-        statusBgColor = '#ede9fe';
-        statusTextColor = '#7c3aed';
-      } else if (item.status === 'Reserved') {
-        statusBgColor = '#fef3c7';
-        statusTextColor = '#d97706';
-      }
-
-      tableRowsHtml.push(
-        <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-          <td style={{ padding: '20px 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>{item.id}</td>
-          <td style={{ padding: '20px 12px', color: '#334155', fontSize: '15px', textTransform: 'capitalize' }}>{item.username}</td>
-          <td style={{ padding: '20px 12px', color: '#64748b', fontSize: '15px' }}>{item.itemName}</td>
-          <td style={{ padding: '20px 12px', color: '#64748b', fontSize: '15px' }}>{formatTransactionDate(item.date)}</td>
-          <td style={{ padding: '20px 12px' }}>
-            <span style={{ backgroundColor: statusBgColor, color: statusTextColor, padding: '6px 14px', borderRadius: '15px', fontSize: '13px', fontWeight: '600' }}>
-              {item.status}
-            </span>
-          </td>
-          <td style={{ padding: '20px 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>₱{(Number(item.totalCost) || 0).toLocaleString()}</td>
-          <td style={{ padding: '20px 12px' }}>{actionElement}</td>
-        </tr>
-      );
-    }
-
-    return tableRowsHtml;
-  }
-
   return (
-    /* Top Main Layout Frame Layer restricting frame height view */
-    <div style={{ display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'sans-serif' }}>
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="p-4 sm:p-6">
+            <div className="flex flex-wrap gap-3 mb-6 sm:flex-row sm:items-center">
+              <div className="relative flex-1 min-w-0 sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by ID, customer, or item..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                />
+              </div>
 
-      {/* INDEPENDENTLY SCROLLABLE DATA DASHBOARD BODY */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px 40px 40px' }}>
-        <h1 style={{ margin: '0 0 5px 0', fontSize: '32px', color: '#0f172a', fontWeight: 'bold' }}>Records</h1>
-        <p style={{ color: 'gray', margin: '0 0 30px 0', fontSize: '16px' }}>Digital logbook of all rental transactions.</p>
+              <div className="relative flex-none">
+                  <button
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className={`w-full p-2.5 rounded-xl border transition-colors flex items-center justify-center gap-2 ${
+                      isFilterOpen ? 'bg-rose-50/50 border-rose-200 text-rose-600' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span className="text-sm font-medium hidden sm:inline">Filters</span>
+                    {activeStatuses.length > 0 && (
+                      <span className="bg-rose-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                        {activeStatuses.length}
+                      </span>
+                    )}
+                  </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '30px', position: 'relative' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ position: 'absolute', left: '20px', pointerEvents: 'none' }}
-            >
-              <circle cx="11" cy="11" r="7" stroke="#94a3b8" strokeWidth="2.5" />
-              <path d="M16 16L21 21" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+                  {isFilterOpen && (
+                    <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-5 w-56 z-50">
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">Filter by Status</p>
+                        {activeStatuses.length > 0 && (
+                          <button
+                            onClick={() => setSelectedStatuses(Object.keys(selectedStatuses).reduce((acc, key) => ({ ...acc, [key]: false }), {}))}
+                            className="text-xs text-rose-600 hover:text-rose-700 font-medium"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        {Object.keys(selectedStatuses).map((status) => (
+                          <label key={status} className={`flex items-center gap-3 text-sm cursor-pointer p-2 rounded-lg transition-colors ${
+                            selectedStatuses[status] ? 'bg-rose-50/50 text-rose-700' : 'hover:bg-gray-50 text-gray-700'
+                          }`}>                          <input
+                            type="checkbox"
+                            checked={selectedStatuses[status]}
+                            onChange={() => setSelectedStatuses((prev) => ({ ...prev, [status]: !prev[status] }))}
+                            className="w-4 h-4 accent-rose-500 cursor-pointer rounded focus:ring-rose-200"
+                          />
+                          <span className="font-medium">{status}</span>
+                        </label>
+                      ))}
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-gray-100">
+                        <p className="text-xs text-gray-400">
+                          {activeStatuses.length === 0 ? 'No filters applied' : `${activeStatuses.length} status${activeStatuses.length === 1 ? '' : 'es'} selected`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-            <input
-              type="text"
-              placeholder="Search by ID, customer, or item..."
-              value={searchText}
-              onChange={function (e) { setSearchText(e.target.value); }}
-              style={{
-                padding: '14px 24px 14px 48px',
-                width: '426px',
-                borderRadius: '25px',
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#f8fafc',
-                outline: 'none',
-                fontSize: '15px'
-              }}
-            />
+              <button
+                onClick={handleExport}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+
+        <div className="hidden md:block overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50/80 border-b border-gray-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Transaction ID</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                  <th className="py-4 px-6 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                  <th className="py-4 px-6 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading && (
+                  <tr>
+                    <td colSpan={7} className="py-16 text-center">
+                      <div className="inline-flex items-center gap-3">
+                        <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm text-gray-500">Loading records…</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && error && (
+                  <tr>
+                    <td colSpan={7} className="py-16 text-center">
+                      <div className="inline-flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{error}</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && !error && transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-16 text-center">
+                      <div className="inline-flex flex-col items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center">
+                          <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">No records match your tracking filter options</p>
+                          <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filter criteria</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && !error && transactions.map((item) => (
+                  <tr key={item.id} className="group hover:bg-gray-50/50 transition-colors duration-150">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-50 to-rose-100 flex items-center justify-center text-rose-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                        </div>
+                        <div className="font-medium text-gray-900">#{item.id}</div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="font-medium text-gray-700 capitalize">{item.username}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293H6"/>
+                          </svg>
+                        </div>
+                        <div className="text-gray-600 truncate max-w-[120px]" title={item.itemName}>{item.itemName}</div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="text-gray-600">{formatTransactionDate(item.date)}</div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${STATUS_STYLES[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="font-semibold text-gray-900">₱{(Number(item.totalCost) || 0).toLocaleString()}</div>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      {item.status !== 'Returned' ? (
+                        <button
+                          onClick={() => handleReturnClick(item.id)}
+                          className="group/btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all duration-200 shadow-sm hover:shadow-md"
+                          title="Process Return"
+                        >
+                          <Undo2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                          <span>Return</span>
+                        </button>
+                      ) : (
+                        <div className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-emerald-600 bg-emerald-50/50 rounded-lg border border-emerald-200/50">
+                          <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                          </div>
+                          <span>Returned</span>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </div>
 
-          <button
-            aria-label="Filter configuration options"
-            onClick={function () { setIsFilterOpen(!isFilterOpen); }}
-            style={{
-              marginLeft: '12px',
-              width: '45px',
-              height: '45px',
-              borderRadius: '50%',
-              border: '1px solid #e2e8f0',
-              backgroundColor: isFilterOpen ? '#f1f5f9' : 'white',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0',
-              outline: 'none'
-            }}
-          >
-            <svg
-              width="21"
-              height="21"
-              viewBox="0 0 24 24"
-              fill="none"
-              style={{ display: 'block' }}
-            >
-              <path
-                d="M3 4.5H21L14 12.5V18.5L10 20.5V12.5L3 4.5Z"
-                stroke="#475569"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExport}
-            style={{
-              marginLeft: 'auto',
-              display: 'inline-flex',
-              alignItems: 'center',
-              height: '45px',
-              padding: '0 16px',
-              borderRadius: '12px',
-              border: '1px solid #10b981',
-              backgroundColor: '#10b981',
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}
-          >
-            Export CSV
-          </button>
-
-          {isFilterOpen && (
-            <div style={{ position: 'absolute', top: '55px', left: '410px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0px 10px 25px rgba(0,0,0,0.08)', padding: '20px', width: '180px', zIndex: 10 }}>
-              <span style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', letterSpacing: '0.05em', marginBottom: '15px' }}>STATUS</span>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Confirmed} onChange={function () { handleCheckboxChange('Confirmed'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Confirmed
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Reserved} onChange={function () { handleCheckboxChange('Reserved'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Reserved
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Overdue} onChange={function () { handleCheckboxChange('Overdue'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Overdue
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Completed} onChange={function () { handleCheckboxChange('Completed'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Completed
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#334155', fontSize: '15px', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={selectedStatuses.Cancelled} onChange={function () { handleCheckboxChange('Cancelled'); }} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                  Cancelled
-                </label>
+        <div className="md:hidden space-y-3">
+          {loading && (
+            <div className="py-10 text-center">
+              <div className="inline-flex items-center gap-2 text-gray-400">
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-400 rounded-full animate-spin"></div>
+                <span className="text-sm">Loading records…</span>
               </div>
             </div>
           )}
+          {!loading && error && (
+            <div className="py-10 text-center">
+              <div className="inline-flex flex-col items-center gap-2 text-rose-500">
+                <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            </div>
+          )}
+          {!loading && !error && transactions.length === 0 && (
+            <div className="py-10 text-center">
+              <div className="inline-flex flex-col items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">No records match your tracking filter options</p>
+                  <p className="text-xs text-gray-400 mt-1">Try adjusting your search or filter criteria</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && transactions.map((item) => (
+            <div key={item.id} className="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-lg transition-all duration-200 ease-in-out">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-50 to-rose-100 flex items-center justify-center text-rose-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Transaction ID</div>
+                        <div className="text-lg font-semibold text-gray-800">#{item.id}</div>
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Date</div>
+                      <div className="text-sm text-gray-500">{formatTransactionDate(item.date)}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer</div>
+                      <div className="text-sm font-medium text-gray-700 capitalize">{item.username}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Item</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293H6"/>
+                          </svg>
+                        </div>
+                        <div className="text-sm text-gray-500 truncate max-w-[120px]" title={item.itemName}>{item.itemName}</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status</div>
+                      <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${STATUS_STYLES[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Amount</div>
+                      <div className="text-lg font-bold text-gray-800">₱{(Number(item.totalCost) || 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4 sm:mt-0">
+                  <div className="text-left">
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Actions</div>
+                    {item.status !== 'Returned' ? (
+                      <button
+                        onClick={() => handleReturnClick(item.id)}
+                        className="group/btn inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition-all duration-200 shadow-sm hover:shadow-md w-full sm:w-auto justify-center"
+                        title="Process Return"
+                      >
+                        <Undo2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                        <span>Return</span>
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-emerald-600 bg-emerald-50/50 rounded-lg border border-emerald-200/50">
+                        <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
+                          </svg>
+                        </div>
+                        <span>Returned</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #edf2f7' }}>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>ID</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Customer</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Item</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Date</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Status</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Amount</th>
-              <th style={{ padding: '16px 12px', color: '#64748b', fontWeight: '500', fontSize: '15px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading records…</td>
-              </tr>
-            )}
-            {!loading && error && (
-              <tr>
-                <td colSpan="7" style={{ padding: '40px', textAlign: 'center', color: '#e05656' }}>{error}</td>
-              </tr>
-            )}
-            {!loading && !error && renderTableRows()}
-          </tbody>
-        </table>
-
-        {!loading && !error && transactions.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '16px' }}>
-            No records match your tracking filter options.
-          </div>
-        )}
-
         {!loading && !error && totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px' }}>
-            <span style={{ color: '#94a3b8', fontSize: '14px' }}>
+          <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-gray-100 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-xs sm:text-sm text-gray-400">
               {total} record{total === 1 ? '' : 's'} · Page {page} of {totalPages}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
               <button
-                type="button"
-                onClick={function () { loadTransactions(Math.max(1, page - 1)); }}
+                onClick={() => loadTransactions(Math.max(1, page - 1))}
                 disabled={page <= 1}
-                style={{ padding: '10px 18px', borderRadius: '20px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#334155', cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.4 : 1, fontSize: '14px' }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
-                ← Prev
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Prev
               </button>
+              <div className="flex flex-wrap items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => loadTransactions(p)}
+                    className={`w-8 h-8 text-sm rounded-lg border transition-colors ${
+                      p === page
+                        ? 'border-rose-200 bg-rose-50 text-rose-600'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
               <button
-                type="button"
-                onClick={function () { loadTransactions(Math.min(totalPages, page + 1)); }}
+                onClick={() => loadTransactions(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
-                style={{ padding: '10px 18px', borderRadius: '20px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#334155', cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.4 : 1, fontSize: '14px' }}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
               >
-                Next →
+                Next
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -393,7 +470,7 @@ function downloadCSV(filename, rows) {
       : s;
   };
   const csv = rows.map((r) => r.map(escape).join(',')).join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
