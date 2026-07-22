@@ -102,7 +102,7 @@ describe("RenTech Sign Up Test Suite", () => {
     it("should show server error if signup fails", async () => {
       mockApi(400, { success: false, message: 'Username already exists' });
       renderSignup();
-      fillForm({ username: "admin", password: "admin", confirm: "admin" });
+      fillForm({ username: "admin", password: "Admin123!", confirm: "Admin123!" });
       await submitForm();
 
       await waitFor(() => {
@@ -116,7 +116,7 @@ describe("RenTech Sign Up Test Suite", () => {
     it("should register a new user successfully and assign the default 'Customer' role", async () => {
       mockApi(201, { success: true, data: { username: 'alice', role: 'Customer' } });
       renderSignup();
-      fillForm({ username: "alice", password: "password123", confirm: "password123" });
+      fillForm({ username: "alice", password: "Pass123!", confirm: "Pass123!" });
       await submitForm();
 
       await waitFor(() => {
@@ -132,7 +132,7 @@ describe("RenTech Sign Up Test Suite", () => {
         return { ok: true, json: vi.fn().mockResolvedValue({ success: true, data: { username: 'alice', role: 'Customer' } }) };
       });
       renderSignup();
-      fillForm({ username: "  AlicE  ", password: "password123", confirm: "password123" });
+      fillForm({ username: "  AlicE  ", password: "Pass123!", confirm: "Pass123!" });
       await submitForm();
 
       await waitFor(() => {
@@ -144,7 +144,7 @@ describe("RenTech Sign Up Test Suite", () => {
     it("should persist a session to localStorage with the default 'Customer' role on successful registration", async () => {
       mockApi(201, { success: true, data: { username: 'charlie', role: 'Customer' } });
       renderSignup();
-      fillForm({ username: "charlie", password: "securePass1", confirm: "securePass1" });
+      fillForm({ username: "charlie", password: "Secure1!", confirm: "Secure1!" });
       await submitForm();
 
       await waitFor(() => {
@@ -160,14 +160,14 @@ describe("RenTech Sign Up Test Suite", () => {
       mockApi(400, { success: false, message: 'Username already exists' });
       renderSignup();
 
-      fillForm({ username: "admin", password: "x", confirm: "x" });
+      fillForm({ username: "admin", password: "Admin123!", confirm: "Admin123!" });
       await submitForm();
       await waitFor(() => {
         expect(screen.getByText("Username already exists")).toBeTruthy();
       });
 
       mockApi(201, { success: true, data: { username: 'dana', role: 'Customer' } });
-      fillForm({ username: "dana", password: "validPass1", confirm: "validPass1" });
+      fillForm({ username: "dana", password: "Valid1!x", confirm: "Valid1!x" });
       await submitForm();
 
       await waitFor(() => {
