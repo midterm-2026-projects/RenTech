@@ -171,11 +171,11 @@ async function populateTestData() {
     const overdueCount = bookings.filter((b) => b[10] === 'Overdue').length;
 
     // ---- 5. Transactions (logbook) ----
-    const TXN_STATUS = ['Reserved', 'Confirmed', 'Completed', 'Cancelled', 'Overdue'];
+    const TXN_STATUS = ['Reserved', 'Confirmed', 'Completed', 'Cancelled', 'Overdue', 'Returned'];
     const transactions = [];
     for (let i = 0; i < 25; i++) {
       const item = pick(INVENTORY);
-      const status = i % 7 === 0 ? 'Overdue' : pick(['Reserved', 'Confirmed', 'Completed', 'Cancelled']);
+      const status = i % 7 === 0 ? 'Overdue' : pick(['Reserved', 'Confirmed', 'Completed', 'Cancelled', 'Returned']);
       const monthOffset = Math.floor(rng() * 7); // Jan..Jul
       const day = 1 + Math.floor(rng() * 27);
       const key = `${YEAR}-${String(monthOffset + 1).padStart(2, '0')}`;

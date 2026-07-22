@@ -83,13 +83,17 @@ describe('BookingForm Interactions', () => {
     expect(downpaymentInput.value).toBe('3050');
   });
 
+  function fillRequiredFields() {
+    fireEvent.change(screen.getByPlaceholderText('Full Name'), { target: { value: 'Jane Doe' } });
+    fireEvent.change(screen.getByPlaceholderText('Phone Number'), { target: { value: '09998887777' } });
+    fireEvent.change(screen.getByPlaceholderText('Address'), { target: { value: '123 Luxury Lane, Manila' } });
+  }
+
   it('should transition steps forward when continue action layout button is triggered', () => {
     render(<BookingForm />);
     
-    const phoneField = screen.getByPlaceholderText('Phone Number');
-    const sizeSelectBox = screen.getByRole('combobox');
-    fireEvent.change(phoneField, { target: { value: '09998887777' } });
-    fireEvent.change(sizeSelectBox, { target: { value: 'L' } });
+    fillRequiredFields();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'L' } });
 
     const actionBtn = screen.getByText('Continue to Payment');
     fireEvent.click(actionBtn);
@@ -100,7 +104,7 @@ describe('BookingForm Interactions', () => {
   it('should adjust selection highlights when explicit payment method cards are clicked', () => {
     render(<BookingForm />);
     
-    fireEvent.change(screen.getByPlaceholderText('Phone Number'), { target: { value: '09998887777' } });
+    fillRequiredFields();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'L' } });
     
     fireEvent.click(screen.getByText('Continue to Payment'));
@@ -120,7 +124,7 @@ describe('BookingForm Interactions', () => {
     
     render(<BookingForm />);
     
-    fireEvent.change(screen.getByPlaceholderText('Phone Number'), { target: { value: '09998887777' } });
+    fillRequiredFields();
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'L' } });
 
     fireEvent.click(screen.getByText('Continue to Payment'));

@@ -25,7 +25,7 @@ export default function TransactionDashboard() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState({
-    Confirmed: false, Reserved: false, Overdue: false, Completed: false, Cancelled: false
+    Confirmed: false, Reserved: false, Overdue: false, Completed: false, Cancelled: false, Returned: false
   });
   const [transactions, setTransactions] = useState([]);
   const [page, setPage] = useState(1);
@@ -49,7 +49,8 @@ export default function TransactionDashboard() {
       const res = await getTransactions({
         page: nextPage, limit: PAGE_SIZE, search: debouncedSearch, status: statusParam,
       });
-      setTransactions(res.data || []);
+      const sorted = (res.data || []).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      setTransactions(sorted);
       setTotal(res.total || 0);
       setTotalPages(res.totalPages || 1);
       setPage(nextPage);
@@ -104,7 +105,7 @@ export default function TransactionDashboard() {
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="p-4 sm:p-6">
             <div className="flex flex-wrap gap-3 mb-6 sm:flex-row sm:items-center">
-              <div className="relative flex-1 min-w-0 sm:max-w-md">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"

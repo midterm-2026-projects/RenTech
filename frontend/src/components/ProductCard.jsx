@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
+import { Image } from 'lucide-react';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onRentClick }) => {
   const [isImageHovered, setIsImageHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const getStatusButtonStyle = (status) => {
     switch (status) {
       case 'Available':
-        return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #e2e8f0' };
+        return { backgroundColor: '#b94a48', color: '#ffffff', border: '1px solid #b94a48' };
       case 'Rented':
         return { backgroundColor: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', cursor: 'not-allowed' };
       case 'Maintenance':
@@ -28,25 +30,33 @@ const ProductCard = ({ product }) => {
         onMouseEnter={() => setIsImageHovered(true)}
         onMouseLeave={() => setIsImageHovered(false)}
       >
-        <img 
-          src={product.image} 
-          alt={product.name} 
-          style={{
-            ...styles.image,
-            transform: isImageHovered ? 'scale(1.05)' : 'scale(1)'
-          }} 
-        />
+        {imageError ? (
+          <div style={styles.placeholder}>
+            <Image style={styles.placeholderIcon} />
+          </div>
+        ) : (
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            onError={() => setImageError(true)}
+            style={{
+              ...styles.image,
+              transform: isImageHovered ? 'scale(1.05)' : 'scale(1)'
+            }} 
+          />
+        )}
       </div>
 
       <div style={styles.detailsContainer}>
         <span style={styles.categoryLabel}>{product.category ? product.category.toUpperCase() : 'PRODUCT'}</span>
         <h3 style={styles.productTitle}>{product.name}</h3>
-        <div style={styles.priceTag}>₱{product.price.toLocaleString()}</div>
+        <div style={styles.priceTag}>₱{Number(product.price || 0).toLocaleString()}</div>
         
         <div style={styles.actionArea}>
           <button 
             style={{ ...styles.statusButton, ...statusStyle }}
             disabled={product.status !== 'Available'}
+            onClick={() => product.status === 'Available' && onRentClick && onRentClick(product)}
             type="button"
           >
             {buttonText}
@@ -81,6 +91,19 @@ const styles = {
     height: '100%',
     objectFit: 'cover',
     transition: 'transform 0.4s ease',
+  },
+  placeholder: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  placeholderIcon: {
+    width: '48px',
+    height: '48px',
+    color: '#cbd5e1',
   },
   detailsContainer: {
     padding: '20px 16px 24px 16px',
@@ -124,7 +147,6 @@ const styles = {
     transition: 'all 0.15s ease',
   },
 };
-
 
 ProductCard.products = [
   {

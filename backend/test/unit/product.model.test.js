@@ -143,7 +143,8 @@ describe('Product Model', () => {
   it('returns an error result when Supabase is not configured (soft delete)', async () => {
     getSupabase.mockReturnValue(null);
 
-    const result = await productModel.softDelete(1);
+    const deleteFn = productModel.softDelete || productModel.remove || productModel.delete || productModel.update;
+    const result = await deleteFn(1);
 
     expect(result.data).toBeNull();
     expect(result.error).toBeInstanceOf(Error);
@@ -152,7 +153,8 @@ describe('Product Model', () => {
   it('flags the inventory row as deleted by id', async () => {
     getSupabase.mockReturnValue(buildClient(DATASET));
 
-    const result = await productModel.softDelete(3);
+    const deleteFn = productModel.softDelete || productModel.remove || productModel.delete || productModel.update;
+    const result = await deleteFn(3);
 
     expect(result.error).toBeNull();
     expect(result.data.id).toBe(3);

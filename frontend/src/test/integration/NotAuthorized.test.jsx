@@ -29,9 +29,10 @@ describe("/unauthorized - NotAuthorized page", () => {
     expect(button).toBeInTheDocument();
   });
 
-  it("/unauthorized - renders lock emoji for visual indication", () => {
+  it("/unauthorized - renders lock icon for visual indication", () => {
     renderNotAuthorized();
-    expect(screen.getByText("🔒")).toBeInTheDocument();
+    const lockIcon = document.querySelector('.lucide-lock');
+    expect(lockIcon).toBeInTheDocument();
   });
 
   it("/unauthorized - displays contact administrator message", () => {
@@ -61,7 +62,8 @@ describe("/unauthorized - NotAuthorized page", () => {
     renderNotAuthorized(["/unauthorized?ref=/admin"]);
     expect(screen.getByText("Not Authorized")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /go to login/i })).toBeInTheDocument();
-    expect(screen.getByText("🔒")).toBeInTheDocument();
+    const lockIcon = document.querySelector('.lucide-lock');
+    expect(lockIcon).toBeInTheDocument();
   });
 
   it("/unauthorized/ - renders page with trailing slash without breaking", () => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const SearchAndFilter = ({ searchTerm, onSearchChange, selectedCategory, onCategoryChange }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const statuses = ['All', 'Available', 'Maintenance', 'Overdue', 'Rented'];
+  const statuses = ['All', 'Available', 'Rented'];
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -84,13 +84,16 @@ const styles = {
   controlsContainer: {
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
+    gap: '12px',
+    width: '100%',
+    flexWrap: 'nowrap',
   },
   searchWrapper: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    width: '320px',
+    flex: '1 1 0',
+    minWidth: '0',
   },
   searchIcon: {
     position: 'absolute',
@@ -109,6 +112,7 @@ const styles = {
   },
   filterWrapper: {
     position: 'relative',
+    flexShrink: 0,
   },
   filterButton: {
     display: 'flex',

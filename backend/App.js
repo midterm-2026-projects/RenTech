@@ -6,6 +6,7 @@ import path from 'path';
 
 import bookingService from './service/booking.service.js';
 import transactionService from './service/transaction.service.js';
+import productService from './service/product.service.js';
 import { registerForecastRoute } from './route/forecastRoute.js';
 import { registerAiRoutes } from './route/aiRoutes.js';
 import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
@@ -125,6 +126,12 @@ transactionRoutes.patch('/transactions/:id', async (req, res) => {
 transactionRoutes.post('/transactions', async (req, res) => {
   try {
     const newTransaction = await transactionService.createTransaction(req.body);
+    if (req.body.item) {
+      const result = await productService.updateProductStatusByName(req.body.item, 'Rented');
+      if (result.error) {
+        console.error('Warning: Failed to update product status:', result.error.message || result.error);
+      }
+    }
     res.status(201).json(newTransaction);
   } catch (error) {
     res.status(400).json({ error: error.message });
