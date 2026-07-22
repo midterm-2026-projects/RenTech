@@ -8,8 +8,6 @@ function getClient() {
   return sb;
 }
 
-// Server-side pagination + optional search/status filter.
-// Returns { data, total, error }.
 export async function findAll({ page = 1, limit = 8, search = '', status = '' } = {}) {
   const sb = getClient();
   if (sb.error) return { data: [], total: 0, error: sb.error };
@@ -41,22 +39,35 @@ export async function findAll({ page = 1, limit = 8, search = '', status = '' } 
   };
 }
 
-// Soft delete: flag the base inventory row as deleted. The `products` view
-// hides flagged rows, so they disappear from listings without losing history.
-// Returns { data, error }.
+export async function updateStatusByName(name, status) {
+  const sb = getClient();
+  if (sb.error) return { data: null, error: sb.error };
+
+  const { data, error } = await sb
+    .from('products')
+    .update({ status: status })
+    .eq('name', name)
+    .select();
+
+  if (error) return { data: null, error };
+
+  return { data: data || [], error: null };
+}
+
 export async function softDelete(id) {
   const sb = getClient();
   if (sb.error) return { data: null, error: sb.error };
 
   const { data, error } = await sb
-    .from('inventory_items')
+    .from('products')
     .update({ is_deleted: true })
     .eq('id', id)
     .select()
     .single();
 
   if (error) return { data: null, error };
-  return { data, error: null };
+
+  return { data: data || null, error: null };
 }
 
-export default { findAll, softDelete };
+export default { findAll, updateStatusByName, softDelete };

@@ -1,31 +1,48 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { LayoutGrid, Clock, LogOut, X } from "lucide-react";
 
-// FIXED: Adjusted paths to correctly look up one level into the components folder
 import Catalog from '../components/Catalog.jsx';
 import SearchAndFilter from '../components/SearchAndFilter.jsx';
 import ProductCard from '../components/ProductCard.jsx';
 import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
 import Transaction from '../components/Transaction.jsx';
-import { clearSession } from '../components/Login.jsx';
 
 export default function CustomerLayout() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Collection");
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 1. Initialize products from localStorage if available, otherwise fallback to ProductCard.products
+  const [productsList, setProductsList] = useState(() => {
+    const savedProducts = localStorage.getItem('customer_products_list');
+    return savedProducts ? JSON.parse(savedProducts) : (ProductCard.products || []);
+  });
+  
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const productsList = ProductCard.products || [];
+  // 2. Save to localStorage whenever productsList changes so it persists on refresh
+  useEffect(() => {
+    localStorage.setItem('customer_products_list', JSON.stringify(productsList));
+  }, [productsList]);
 
   const filteredProducts = productsList.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedCategory === "All" || product.status === selectedCategory;
     return matchesSearch && matchesStatus;
   });
+
+  // 3. Automatically update the product status to 'Rented' once booking succeeds
+  const handleBookingSuccess = (itemName) => {
+    setProductsList(prevProducts =>
+      prevProducts.map(product =>
+        product.name === itemName
+          ? { ...product, status: 'Rented' }
+          : product
+      )
+    );
+  };
 
   const getButtonStyles = (tabName) => {
     const baseStyle = "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-lg font-medium transition cursor-pointer text-left text-xs";
@@ -41,8 +58,7 @@ export default function CustomerLayout() {
 
   const handleConfirmSignOut = () => {
     setShowSignOutModal(false);
-    clearSession();
-    navigate("/", { replace: true });
+    alert("Signing out..."); 
   };
 
   return (
@@ -141,14 +157,11 @@ export default function CustomerLayout() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                   {filteredProducts.map((product) => (
-                    <div 
+                    <ProductCard 
                       key={product.id} 
-                      onClick={() => product.status === 'Available' && setIsModalOpen(true)}
-                      className="transition hover:-translate-y-0.5 duration-200"
-                      style={{ cursor: product.status === 'Available' ? 'pointer' : 'default' }}
-                    >
-                      <ProductCard product={product} />
-                    </div>
+                      product={product} 
+                      onRentClick={(item) => setSelectedProduct(item)} 
+                    />
                   ))}
                 </div>
               )}
@@ -163,8 +176,17 @@ export default function CustomerLayout() {
       {/* Widgets & Overlays */}
       <ChatAssistantWidget products={productsList} />
 
-      {isModalOpen && (
-        <BookingForm onClose={() => setIsModalOpen(false)} />
+      {/* Booking Form Modal with dynamic data and success trigger */}
+      {selectedProduct && (
+        <BookingForm 
+          itemName={selectedProduct.name}
+          itemPrice={selectedProduct.price}
+          onClose={() => setSelectedProduct(null)}
+          onBookingSuccess={() => {
+            handleBookingSuccess(selectedProduct.name);
+            setSelectedProduct(null);
+          }}
+        />
       )}
 
       {showSignOutModal && (

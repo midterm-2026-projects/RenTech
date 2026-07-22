@@ -6,6 +6,7 @@ export function registerTransactionRoutes(router) {
 
   router.post(
     '/transactions',
+    validateRequest,
     transactionController.createTransaction
   );
 }

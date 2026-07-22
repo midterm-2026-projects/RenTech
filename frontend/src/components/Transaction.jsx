@@ -1,42 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Transaction = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  
-  const transactions = [
-    {
-      id: 'TX-1021',
-      item: 'Crimson Ballgown',
-      date: 'May 10, 2026',
-      status: 'Reserved',
-      amount: '₱2,000'
-    },
-    {
-      id: 'TX-1022',
-      item: 'Emerald Evening Gown',
-      date: 'May 12, 2026',
-      status: 'Reserved',
-      amount: '₱3,500'
-    },
-    {
-      id: 'TX-1023',
-      item: 'Sapphire Tuxedo',
-      date: 'May 15, 2026',
-      status: 'Reserved',
-      amount: '₱2,800'
-    }
-  ];
+  // Fetch live transactions from backend API
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/transactions');
+        const result = await response.json();
 
-  
+        if (result.status === 'success') {
+          setTransactions(result.data || []);
+        } else {
+          setError(result.message || 'Failed to fetch transactions');
+        }
+      } catch (err) {
+        console.error('Error fetching transactions:', err);
+        setError('Server connection error.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, []);
+
   const filteredTransactions = transactions.filter(tx => 
-    tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tx.item.toLowerCase().includes(searchTerm.toLowerCase())
+    (tx.id && tx.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (tx.item && tx.item.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (tx.username && tx.username.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div style={styles.container}>
-      {/* Centered */}
       <div style={styles.contentWrapper}>
         {/* Header Section */}
         <div style={styles.header}>
@@ -67,27 +68,37 @@ const Transaction = () => {
               <tr style={styles.tableHeaderRow}>
                 <th style={styles.thLeft}>ID</th>
                 <th style={styles.thLeft}>Item</th>
+                <th style={styles.thLeft}>Customer</th>
                 <th style={styles.thLeft}>Date</th>
                 <th style={styles.thLeft}>Status</th>
                 <th style={styles.thRight}>Amount</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" style={styles.noData}>Loading live transactions...</td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="6" style={{ ...styles.noData, color: '#ef4444' }}>{error}</td>
+                </tr>
+              ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map((tx) => (
-                  <tr key={tx.id} style={styles.tableRow}>
+                  <tr key={tx.id || tx._id} style={styles.tableRow}>
                     <td style={styles.tdId}>{tx.id}</td>
-                    <td style={styles.tdItem}>{tx.item}</td>
+                    <td style={styles.tdItem}>{tx.item || tx.itemName}</td>
+                    <td style={styles.tdItem}>{tx.username || 'Customer'}</td>
                     <td style={styles.tdDate}>{tx.date}</td>
                     <td style={styles.tdLeft}>
                       <span style={styles.badge}>{tx.status}</span>
                     </td>
-                    <td style={styles.tdAmount}>{tx.amount}</td>
+                    <td style={styles.tdAmount}>₱{tx.amount || tx.totalCost}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={styles.noData}>No transactions found.</td>
+                  <td colSpan="6" style={styles.noData}>No transactions found.</td>
                 </tr>
               )}
             </tbody>

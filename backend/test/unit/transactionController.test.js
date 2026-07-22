@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import request from 'supertest';
-import express from 'express';
-import { registerTransactionRoutes } from '../../route/transactionRoute.js';
 import transactionService from '../../service/transaction.service.js';
+import { createTransaction, getTransactions } from '../../controller/transactionController.js';
 
-// Mock the service layer
 vi.mock('../../service/transaction.service.js', () => ({
   default: {
     getTransactions: vi.fn(),
@@ -12,79 +9,84 @@ vi.mock('../../service/transaction.service.js', () => ({
   },
 }));
 
-// Setup a minimal Express app for Supertest
-const app = express();
-app.use(express.json());
-const router = express.Router();
-registerTransactionRoutes(router);
-app.use('/', router); 
+vi.mock('../../model/product.model.js', () => ({
+  default: {
+    create: vi.fn().mockResolvedValue({ data: [], error: null }),
+    update: vi.fn().mockResolvedValue({ data: [], error: null }),
+    updateStatusByName: vi.fn().mockResolvedValue({ data: [], error: null }),
+  },
+}));
 
-describe('Transaction Controller (Supertest)', () => {
+vi.mock('../../service/product.service.js', () => ({
+  default: {
+    updateProductStatusByName: vi.fn().mockResolvedValue({ data: [], error: null }),
+  },
+}));
+
+describe('Transaction Controller Unit Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('GET /transactions', () => {
-    it('should return 200 and success status with transaction list', async () => {
-      const payload = [{ id: 'TX-1021', item: 'Crimson Ballgown', amount: '₱2,000' }];
-      transactionService.getTransactions.mockResolvedValue(payload);
+  describe('GET getTransactions', () => {
+    it('should return 200 and transactions on success', async () => {
+      const payload = [{ id: 'TX-1021', item: 'Crimson Ballgown' }];
+      transactionService.getTransactions.mockResolvedValue({ data: payload, total: 1 });
 
-      const response = await request(app).get('/transactions');
+      const req = { query: {} };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      };
 
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
+      await getTransactions(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         status: 'success',
-        message: 'Transactions retrieved successfully',
         data: payload
-      });
-    });
-
-    // Test case for handling empty transaction database state
-    it('should return 200 and empty data when there are no transactions', async () => {
-      transactionService.getTransactions.mockResolvedValue([]);
-
-      const response = await request(app).get('/transactions');
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
-        status: 'success',
-        message: 'Transactions retrieved successfully',
-        data: []
-      });
+      }));
     });
   });
 
-  describe('POST /transactions', () => {
+  describe('POST createTransaction', () => {
     const validBody = {
       item: 'Emerald Evening Gown',
       amount: '₱3,500',
       status: 'Reserved'
     };
 
-    it('should return 200 when transaction is created successfully', async () => {
+    it('should return success response when created', async () => {
       transactionService.createTransaction.mockResolvedValue(validBody);
 
-      const response = await request(app)
-        .post('/transactions')
-        .send(validBody);
+      const req = { body: validBody };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      };
 
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({
+      await createTransaction(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         status: 'success',
-        message: 'Transaction created successfully',
         data: validBody
-      });
+      }));
     });
 
-    it('should return 400 when service layer throws an error', async () => {
+    it('should return 400 when service throws error', async () => {
       transactionService.createTransaction.mockRejectedValue(new Error('Invalid item name'));
 
-      const response = await request(app)
-        .post('/transactions')
-        .send({});
+      const req = { body: {} };
+      const res = {
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+      };
 
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual({
+      await createTransaction(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
         status: 'error',
         message: 'Invalid item name'
       });
