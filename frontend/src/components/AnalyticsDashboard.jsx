@@ -5,27 +5,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
-// Acceptance Criteria: Hardcoded example data for Revenue
-const hardcodedRevenueData = [
-  { month: 'Jan', revenue: 4000 },
-  { month: 'Feb', revenue: 3000 },
-  { month: 'Mar', revenue: 5000 },
-  { month: 'Apr', revenue: 2780 },
-  { month: 'May', revenue: 1890 },
-  { month: 'Jun', revenue: 2390 },
-];
-
-// Acceptance Criteria: Hardcoded example data for Demand Forecasting (SMA)
-// Note: Future months lack 'actualDemand' to simulate projections
-const hardcodedForecastData = [
-  { month: 'Jan', actualDemand: 45, projectedSMA: 40 },
-  { month: 'Feb', actualDemand: 52, projectedSMA: 46 },
-  { month: 'Mar', actualDemand: 61, projectedSMA: 53 },
-  { month: 'Apr', actualDemand: 48, projectedSMA: 55 },
-  { month: 'May', actualDemand: null, projectedSMA: 60 }, // Future Projection
-  { month: 'Jun', actualDemand: null, projectedSMA: 65 }, // Future Projection
-];
-
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const fmtPHP = (value) =>
@@ -58,7 +37,7 @@ const ForecastTooltip = ({ active, payload, label }) => {
   );
 };
 
-const AnalyticsDashboard = ({ revenueData = hardcodedRevenueData, forecastData = hardcodedForecastData }) => {
+const AnalyticsDashboard = ({ revenueData = [], forecastData = [] }) => {
   const normalizedRevenue = (revenueData || []).map((d) => ({
     month: d.month,
     revenue: Number(d.revenue) || 0,

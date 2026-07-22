@@ -13,6 +13,7 @@ import { registerAnalyticsRoutes } from './route/analyticsRoute.js';
 import { registerProductRoutes } from './route/productRoute.js';
 import { registerHealthRoutes } from './route/healthRoute.js';
 import { requestLogger, errorLogger } from './middleware/requestLogger.js';
+import { requireAuth } from './middleware/auth.js';
 import analyticsModel from './model/analytics.model.js';
 import { register, login, signup, signin } from './controller/loginController.js';
 import { getRentalHistory, getTransactionSummary, calculateTransactionCosts } from './service/transactionMonitoring.service.js';
@@ -56,7 +57,7 @@ registerAnalyticsRoutes(analyticsRouter);
 // ====================
 // Booking Endpoints
 // ====================
-bookingRoutes.get('/bookings', async (req, res) => {
+bookingRoutes.get('/bookings', requireAuth, async (req, res) => {
   try {
     const bookings = await bookingService.getBookings();
     res.json(bookings);
@@ -65,7 +66,7 @@ bookingRoutes.get('/bookings', async (req, res) => {
   }
 });
 
-bookingRoutes.post('/bookings', async (req, res) => {
+bookingRoutes.post('/bookings', requireAuth, async (req, res) => {
   try {
     const newBooking = await bookingService.createBooking(req.body);
     res.status(201).json(newBooking);
@@ -77,7 +78,7 @@ bookingRoutes.post('/bookings', async (req, res) => {
 // ====================
 // Transaction Endpoints
 // ====================
-transactionRoutes.get('/transactions', async (req, res) => {
+transactionRoutes.get('/transactions', requireAuth, async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -107,7 +108,7 @@ transactionRoutes.get('/transactions', async (req, res) => {
   }
 });
 
-transactionRoutes.patch('/transactions/:id', async (req, res) => {
+transactionRoutes.patch('/transactions/:id', requireAuth, async (req, res) => {
   try {
     const { status } = req.body;
     const updated = await transactionService.updateTransactionStatus(req.params.id, status);
@@ -123,7 +124,7 @@ transactionRoutes.patch('/transactions/:id', async (req, res) => {
   }
 });
 
-transactionRoutes.post('/transactions', async (req, res) => {
+transactionRoutes.post('/transactions', requireAuth, async (req, res) => {
   try {
     const newTransaction = await transactionService.createTransaction(req.body);
     if (req.body.item) {
@@ -138,7 +139,7 @@ transactionRoutes.post('/transactions', async (req, res) => {
   }
 });
 
-transactionRoutes.get('/transactions/history', async (req, res) => {
+transactionRoutes.get('/transactions/history', requireAuth, async (req, res) => {
   try {
     const { username, status, itemName } = req.query;
     const filters = {};
@@ -154,7 +155,7 @@ transactionRoutes.get('/transactions/history', async (req, res) => {
   }
 });
 
-transactionRoutes.get('/transactions/summary', async (req, res) => {
+transactionRoutes.get('/transactions/summary', requireAuth, async (req, res) => {
   try {
     const { username } = req.query;
     const summary = await getTransactionSummary(username || null);
@@ -164,13 +165,14 @@ transactionRoutes.get('/transactions/summary', async (req, res) => {
   }
 });
 
-transactionRoutes.get('/transactions/costs', async (req, res) => {
+transactionRoutes.get('/transactions/costs', requireAuth, async (req, res) => {
   try {
     const { transactionId } = req.query;
     const costData = await calculateTransactionCosts(transactionId || null);
     res.json(costData);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    const status = error.statusCode || 500;
+    res.status(status).json({ error: error.message });
   }
 });
 
@@ -185,7 +187,7 @@ loginRoutes.post('/signin', signin);
 // ====================
 // Settings/Template Endpoints
 // ====================
-settingsRoutes.get('/templates', async (req, res) => {
+settingsRoutes.get('/templates', requireAuth, async (req, res) => {
   try {
     const templates = await getTemplates();
     res.json(templates);
@@ -194,7 +196,7 @@ settingsRoutes.get('/templates', async (req, res) => {
   }
 });
 
-settingsRoutes.put('/templates/:key', async (req, res) => {
+settingsRoutes.put('/templates/:key', requireAuth, async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
@@ -210,7 +212,7 @@ settingsRoutes.put('/templates/:key', async (req, res) => {
   }
 });
 
-settingsRoutes.post('/templates/reset/:key', async (req, res) => {
+settingsRoutes.post('/templates/reset/:key', requireAuth, async (req, res) => {
   try {
     const { key } = req.params;
     const reverted = await resetTemplate(key);
@@ -220,7 +222,7 @@ settingsRoutes.post('/templates/reset/:key', async (req, res) => {
   }
 });
 
-settingsRoutes.post('/templates/reset-all', async (req, res) => {
+settingsRoutes.post('/templates/reset-all', requireAuth, async (req, res) => {
   try {
     const freshTemplates = await resetAllTemplates();
     res.json(freshTemplates);
@@ -232,7 +234,7 @@ settingsRoutes.post('/templates/reset-all', async (req, res) => {
 // ====================
 // Staff Management Endpoints
 // ====================
-staffRoutes.get('/staff', async (req, res) => {
+staffRoutes.get('/staff', requireAuth, async (req, res) => {
   try {
     const staffList = await getStaffList();
     res.json(staffList);
@@ -241,7 +243,7 @@ staffRoutes.get('/staff', async (req, res) => {
   }
 });
 
-staffRoutes.post('/staff', async (req, res) => {
+staffRoutes.post('/staff', requireAuth, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -256,7 +258,7 @@ staffRoutes.post('/staff', async (req, res) => {
   }
 });
 
-staffRoutes.delete('/staff/:username', async (req, res) => {
+staffRoutes.delete('/staff/:username', requireAuth, async (req, res) => {
   try {
     const { username } = req.params;
     const result = await removeStaff(username);
@@ -269,7 +271,7 @@ staffRoutes.delete('/staff/:username', async (req, res) => {
 // ====================
 // Migration Endpoint
 // ====================
-app.post('/api/migrations/run', async (req, res) => {
+app.post('/api/migrations/run', requireAuth, async (req, res) => {
   try {
     const result = await analyticsModel.runMigration();
     if (result.error) {

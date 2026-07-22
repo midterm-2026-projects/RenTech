@@ -11,6 +11,9 @@ vi.mock('../../service/product.service.js', () => ({
   },
 }));
 
+const AUTH_TOKEN = Buffer.from('admin:Admin:1740000000000').toString('base64');
+const auth = { Authorization: `Bearer ${AUTH_TOKEN}` };
+
 const app = express();
 app.use(express.json());
 const router = express.Router();
@@ -30,7 +33,7 @@ describe('Product Controller (Supertest)', () => {
       ];
       productService.getProducts.mockResolvedValue({ data: payload, total: 2, error: null });
 
-      const response = await request(app).get('/products');
+      const response = await request(app).get('/products').set(auth);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({
@@ -52,7 +55,7 @@ describe('Product Controller (Supertest)', () => {
     it('forwards page, limit, search and status query params to the service', async () => {
       productService.getProducts.mockResolvedValue({ data: [], total: 0, error: null });
 
-      await request(app).get('/products?page=3&limit=4&search=gown&status=Available');
+      await request(app).get('/products?page=3&limit=4&search=gown&status=Available').set(auth);
 
       expect(productService.getProducts).toHaveBeenCalledWith({
         page: 3,
@@ -65,7 +68,7 @@ describe('Product Controller (Supertest)', () => {
     it('computes totalPages correctly from the total count', async () => {
       productService.getProducts.mockResolvedValue({ data: [], total: 25, error: null });
 
-      const response = await request(app).get('/products?limit=8');
+      const response = await request(app).get('/products?limit=8').set(auth);
 
       expect(response.status).toBe(200);
       expect(response.body.totalPages).toBe(4);
@@ -78,7 +81,7 @@ describe('Product Controller (Supertest)', () => {
         error: new Error('Supabase not configured'),
       });
 
-      const response = await request(app).get('/products');
+      const response = await request(app).get('/products').set(auth);
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({
@@ -90,7 +93,7 @@ describe('Product Controller (Supertest)', () => {
     it('returns 500 when the service throws', async () => {
       productService.getProducts.mockRejectedValue(new Error('boom'));
 
-      const response = await request(app).get('/products');
+      const response = await request(app).get('/products').set(auth);
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ status: 'error', message: 'boom' });
@@ -101,7 +104,7 @@ describe('Product Controller (Supertest)', () => {
     it('returns a success envelope when the service succeeds', async () => {
       productService.softDeleteProduct.mockResolvedValue({ data: { id: 1 }, error: null });
 
-      const response = await request(app).patch('/products/1/soft-delete');
+      const response = await request(app).patch('/products/1/soft-delete').set(auth);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ status: 'success', message: 'Product deleted' });
@@ -111,7 +114,7 @@ describe('Product Controller (Supertest)', () => {
     it('returns 500 when the service reports an error', async () => {
       productService.softDeleteProduct.mockResolvedValue({ data: null, error: new Error('nope') });
 
-      const response = await request(app).patch('/products/1/soft-delete');
+      const response = await request(app).patch('/products/1/soft-delete').set(auth);
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ status: 'error', message: 'nope' });
@@ -120,7 +123,7 @@ describe('Product Controller (Supertest)', () => {
     it('returns 500 when the service throws', async () => {
       productService.softDeleteProduct.mockRejectedValue(new Error('boom'));
 
-      const response = await request(app).patch('/products/1/soft-delete');
+      const response = await request(app).patch('/products/1/soft-delete').set(auth);
 
       expect(response.status).toBe(500);
       expect(response.body).toEqual({ status: 'error', message: 'boom' });

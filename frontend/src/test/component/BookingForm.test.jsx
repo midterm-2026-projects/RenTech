@@ -3,6 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import BookingForm from '../../components/BookingForm';
 
+vi.mock('../../services/inventoryApiClient', () => ({
+  createTransaction: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 // Mocking DatePicker to isolate test environment
 vi.mock('./DatePicker', () => {
   return {
@@ -117,11 +121,6 @@ describe('BookingForm Interactions', () => {
   });
 
   it('should exhibit receipt layout confirmations when final checkout confirmation is executed', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    }));
-    
     render(<BookingForm />);
     
     fillRequiredFields();

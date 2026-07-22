@@ -4,6 +4,7 @@ import CustomerLayout from "./pages/CustomerLayout";
 import NotAuthorized from "./pages/NotAuthorized";
 import Login from "./components/Login";
 import { getSession, clearSession } from "./components/Login";
+import ToastContainer from "./components/Toast";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -39,14 +40,17 @@ function HomePage() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/admin" element={<AdminLayout />} />
-      <Route path="/customer" element={<CustomerLayout />} />
-      <Route path="/unauthorized" element={<NotAuthorized />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin" element={<AdminLayout />} />
+        <Route path="/customer" element={<CustomerLayout />} />
+        <Route path="/unauthorized" element={<NotAuthorized />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ToastContainer />
+    </>
   );
 }
 

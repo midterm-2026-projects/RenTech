@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import SearchAndFilter from '../../components/SearchAndFilter';
 
 
-const InteractiveSearchFilter = ({ onCategoryChange }) => {
+const InteractiveSearchFilter = ({ onStatusChange }) => {
   const [selected, setSelected] = useState('All');
   const dummyCategories = ['All', 'Available', 'Maintenance', 'Overdue', 'Rented'];
 
@@ -13,10 +13,10 @@ const InteractiveSearchFilter = ({ onCategoryChange }) => {
       <SearchAndFilter
         searchTerm=""
         onSearchChange={vi.fn()}
-        selectedCategory={selected}
-        onCategoryChange={(val) => {
+        statusFilter={selected}
+        onStatusChange={(val) => {
           setSelected(val);
-          if (onCategoryChange) onCategoryChange(val);
+          if (onStatusChange) onStatusChange(val);
         }}
       />
 
@@ -28,7 +28,7 @@ const InteractiveSearchFilter = ({ onCategoryChange }) => {
           data-testid={`status-${cat.toLowerCase()}`} 
           onClick={() => {
             setSelected(cat);
-            if (onCategoryChange) onCategoryChange(cat);
+            if (onStatusChange) onStatusChange(cat);
           }}
         >
           {cat}
@@ -42,7 +42,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
   
 
   it('renders the search input component frame with placeholder text', () => {
-    render(<InteractiveSearchFilter onCategoryChange={vi.fn()} />);
+    render(<InteractiveSearchFilter onStatusChange={vi.fn()} />);
     
     const inputElement = screen.queryByPlaceholderText(/search/i) || screen.queryByRole('textbox');
     expect(inputElement).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
 
   it('displays the filter section wrapper header title', () => {
-    render(<InteractiveSearchFilter onCategoryChange={vi.fn()} />);
+    render(<InteractiveSearchFilter onStatusChange={vi.fn()} />);
 
     const statusHeader = screen.queryByText(/status/i) || screen.queryByText((content, element) => {
       return element?.textContent?.toLowerCase().includes('status');
@@ -62,7 +62,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
   it('should appear the All product options when I click All button', () => {
     const handleCategoryChange = vi.fn();
-    render(<InteractiveSearchFilter onCategoryChange={handleCategoryChange} />);
+    render(<InteractiveSearchFilter onStatusChange={handleCategoryChange} />);
 
     const allButton = screen.getByTestId('status-all');
     expect(allButton).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
   it('should appear the Available product options when I click Available button', () => {
     const handleCategoryChange = vi.fn();
-    render(<InteractiveSearchFilter onCategoryChange={handleCategoryChange} />);
+    render(<InteractiveSearchFilter onStatusChange={handleCategoryChange} />);
 
     const availableButton = screen.getByTestId('status-available');
     expect(availableButton).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
   it('should appear the Maintenance product options when I click Maintenance button', () => {
     const handleCategoryChange = vi.fn();
-    render(<InteractiveSearchFilter onCategoryChange={handleCategoryChange} />);
+    render(<InteractiveSearchFilter onStatusChange={handleCategoryChange} />);
 
     const maintenanceButton = screen.getByTestId('status-maintenance');
     expect(maintenanceButton).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
   it('should appear the Overdue product options when I click Overdue button', () => {
     const handleCategoryChange = vi.fn();
-    render(<InteractiveSearchFilter onCategoryChange={handleCategoryChange} />);
+    render(<InteractiveSearchFilter onStatusChange={handleCategoryChange} />);
 
     const overdueButton = screen.getByTestId('status-overdue');
     expect(overdueButton).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('SearchAndFilter Component - Status Buttons', () => {
 
   it('should appear the Rented product options when I click Rented button', () => {
     const handleCategoryChange = vi.fn();
-    render(<InteractiveSearchFilter onCategoryChange={handleCategoryChange} />);
+    render(<InteractiveSearchFilter onStatusChange={handleCategoryChange} />);
 
     const rentedButton = screen.getByTestId('status-rented');
     expect(rentedButton).toBeInTheDocument();

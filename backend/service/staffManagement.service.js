@@ -1,73 +1,76 @@
-let staffMembers = [
-  { username: "admin", password: "admin123", role: "Admin" },
-  { username: "staff1", password: "staff123", role: "Staff" },
-  { username: "staff2", password: "staff456", role: "Staff" }
-];
+import bcrypt from 'bcryptjs';
+import { getSupabase } from '../config/supabaseClient.js';
+
+function getClient() {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase not configured.');
+  return sb;
+}
 
 export const getStaffList = async () => {
-  return staffMembers.map(member => ({
-    username: member.username,
-    role: member.role
-  }));
+  const sb = getClient();
+  const { data, error } = await sb
+    .from('local_users')
+    .select('username, role')
+    .in('role', ['Staff', 'Admin']);
+  if (error) throw new Error(error.message);
+  return data || [];
 };
 
 export const addStaff = async ({ username, password }) => {
-  const existingStaff = staffMembers.find(
-    member => member.username.toLowerCase() === username.toLowerCase()
-  );
-  
-  if (existingStaff) {
-    throw new Error("Staff member with this username already exists.");
-  }
-  
-  const newStaff = {
-    username: username.toLowerCase(),
-    password: password,
-    role: "Staff"
-  };
-  
-  staffMembers.push(newStaff);
-  
-  return {
-    username: newStaff.username,
-    role: newStaff.role,
-    message: "Staff member added successfully."
-  };
+  const sb = getClient();
+  const normalized = username.trim().toLowerCase();
+
+  const { data: existing } = await sb
+    .from('local_users')
+    .select('username')
+    .eq('username', normalized)
+    .maybeSingle();
+  if (existing) throw new Error('Staff member with this username already exists.');
+
+  const password_hash = await bcrypt.hash(password, 10);
+  const { error } = await sb
+    .from('local_users')
+    .insert({ username: normalized, password_hash, role: 'Staff' });
+  if (error) throw new Error(error.message);
+
+  return { username: normalized, role: 'Staff', message: 'Staff member added successfully.' };
 };
 
 export const removeStaff = async (username) => {
-  const initialLength = staffMembers.length;
-  staffMembers = staffMembers.filter(
-    member => member.username.toLowerCase() !== username.toLowerCase()
-  );
-  
-  if (staffMembers.length === initialLength) {
-    throw new Error("Staff member not found.");
-  }
-  
-  return {
-    success: true,
-    message: `Staff member '${username}' has been removed.`,
-    remainingStaff: staffMembers.length
-  };
+  const sb = getClient();
+  const normalized = username.trim().toLowerCase();
+
+  const { data: existing } = await sb
+    .from('local_users')
+    .select('username')
+    .eq('username', normalized)
+    .maybeSingle();
+  if (!existing) throw new Error('Staff member not found.');
+
+  const { error } = await sb
+    .from('local_users')
+    .delete()
+    .eq('username', normalized);
+  if (error) throw new Error(error.message);
+
+  return { success: true, message: `Staff member '${normalized}' has been removed.` };
 };
 
 export const validateStaffCredentials = async (username, password) => {
-  const staff = staffMembers.find(
-    member => member.username.toLowerCase() === username.toLowerCase()
-  );
-  
-  if (!staff) {
-    throw new Error("Staff member not found.");
-  }
-  
-  if (staff.password !== password) {
-    throw new Error("Invalid password.");
-  }
-  
-  return {
-    username: staff.username,
-    role: staff.role,
-    authenticated: true
-  };
+  const sb = getClient();
+  const normalized = username.trim().toLowerCase();
+
+  const { data, error } = await sb
+    .from('local_users')
+    .select('username, password_hash, role')
+    .eq('username', normalized)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Staff member not found.');
+
+  const match = await bcrypt.compare(password, data.password_hash);
+  if (!match) throw new Error('Invalid password.');
+
+  return { username: data.username, role: data.role, authenticated: true };
 };

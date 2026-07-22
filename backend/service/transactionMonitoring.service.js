@@ -1,108 +1,105 @@
-import { RentalRecordModel } from '../model/transactionMonitoring.model.js';
+import { getSupabase } from '../config/supabaseClient.js';
 
-const mockRentalsDb = [
-  new RentalRecordModel({ id: "TX-1001", username: "ana rivera", itemName: "Vintage Gatsby Sequin Dress", date: "2026-05-01", pricePerDay: 500, daysRented: 3, status: "Active" }),
-  new RentalRecordModel({ id: "TX-1002", username: "carlos mendez", itemName: "Barong Tagalog", date: "2026-05-02", pricePerDay: 400, daysRented: 2, status: "Active" }),
-  new RentalRecordModel({ id: "TX-1003", username: "liza santos", itemName: "Emerald Velvet Gown", date: "2026-05-03", pricePerDay: 600, daysRented: 3, status: "Active" }),
-  new RentalRecordModel({ id: "TX-1004", username: "daniel cruz", itemName: "Black Tuxedo", date: "2026-05-04", pricePerDay: 700, daysRented: 2, status: "Returned" }), 
-  new RentalRecordModel({ id: "TX-1005", username: "isabel garcia", itemName: "Champagne Silk Gown", date: "2026-05-02", pricePerDay: 850, daysRented: 2, status: "Active" })
-];
+function getClient() {
+  const sb = getSupabase();
+  if (!sb) {
+    return { data: null, error: new Error('Supabase not configured.') };
+  }
+  return sb;
+}
+
+function mapRow(row) {
+  if (!row) return row;
+  return {
+    id: row.id,
+    username: row.username || 'Walk-in Customer',
+    itemName: row.item,
+    pricePerDay: row.price_per_day != null ? Number(row.price_per_day) : null,
+    daysRented: row.days_rented != null ? Number(row.days_rented) : null,
+    totalCost: row.amount != null ? Number(row.amount) : 0,
+    status: row.status,
+    date: row.date,
+  };
+}
 
 export const getRentalHistory = async (filters = {}) => {
-  let filteredRecords = [...mockRentalsDb];
+  const sb = getClient();
+  if (sb.error) return [];
 
   if (filters.username !== undefined && filters.username !== null) {
     if (typeof filters.username !== "string" || filters.username.trim() === "") {
       throw new Error("Improper Data Type: Username filter must be a non-empty string.");
     }
   }
-
   if (filters.status !== undefined && filters.status !== null) {
     if (typeof filters.status !== "string" || filters.status.trim() === "") {
       throw new Error("Improper Data Type: Status filter must be a non-empty string.");
     }
   }
-
   if (filters.itemName !== undefined && filters.itemName !== null) {
     if (typeof filters.itemName !== "string" || filters.itemName.trim() === "") {
       throw new Error("Improper Data Type: Item Name filter must be a non-empty string.");
     }
   }
 
-  if (filters.username) {
-    const cleanUser = filters.username.trim().toLowerCase();
-    filteredRecords = filteredRecords.filter(r => r.username.toLowerCase().includes(cleanUser));
-  }
+  let q = sb.from('transactions').select('*', { count: 'exact' });
 
+  if (filters.username) {
+    q = q.ilike('username', `%${filters.username.trim()}%`);
+  }
   if (filters.status) {
     if (Array.isArray(filters.status)) {
-      filteredRecords = filteredRecords.filter(r => filters.status.map(s => s.toLowerCase()).includes(r.status.toLowerCase()));
+      q = q.in('status', filters.status);
     } else {
-      filteredRecords = filteredRecords.filter(r => r.status.toLowerCase() === filters.status.toLowerCase());
+      q = q.ilike('status', filters.status);
     }
   }
-
   if (filters.itemName) {
-    const cleanItem = filters.itemName.toLowerCase();
-    
-    if (cleanItem === "lap") {
-      return [
-        new RentalRecordModel({ id: "TX-9999", username: "test user", itemName: "Premium Laptop Stand", date: "2026-05-01", pricePerDay: 100, daysRented: 1, status: "Active" })
-      ];
-    }
-
-    filteredRecords = filteredRecords.filter(r => r.itemName.toLowerCase().includes(cleanItem));
+    q = q.ilike('item', `%${filters.itemName.trim()}%`);
   }
 
-  return filteredRecords;
+  const { data, error } = await q.order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 };
 
 export const getTransactionSummary = async (username = null) => {
-  if (username !== null) {
-    if (typeof username !== "string" || username.trim() === "") {
-      throw new Error("Improper Data Type: Username argument must be a valid string.");
-    }
+  if (username !== null && (typeof username !== "string" || username.trim() === "")) {
+    throw new Error("Improper Data Type: Username argument must be a valid string.");
   }
 
-  let targetRecords = [...mockRentalsDb];
+  const sb = getClient();
+  if (sb.error) return { totalTransactions: 0, totalRevenue: 0, statusCounts: {} };
 
+  let q = sb.from('transactions').select('amount, status, username', { count: 'exact' });
   if (username) {
-    const cleanUser = username.trim().toLowerCase();
-    targetRecords = targetRecords.filter(r => r.username.toLowerCase().includes(cleanUser));
+    q = q.ilike('username', `%${username.trim()}%`);
   }
 
-  const totalTransactions = targetRecords.length;
-  const totalRevenue = targetRecords.reduce((sum, record) => sum + (record.totalCost || 0), 0);
-  
-  const statusCounts = targetRecords.reduce((acc, record) => {
-    acc[record.status] = (acc[record.status] || 0) + 1;
+  const { data, error, count } = await q;
+  if (error) throw new Error(error.message);
+
+  const records = data || [];
+  const totalRevenue = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const statusCounts = records.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
     return acc;
   }, {});
 
   return {
-    totalTransactions,
+    totalTransactions: typeof count === 'number' ? count : records.length,
     totalRevenue,
-    statusCounts
+    statusCounts,
   };
 };
 
 export const getAllTransactionSummaries = async () => {
-  const allSummaries = [];
-  
-  for (const record of mockRentalsDb) {
-    allSummaries.push({
-      id: record.id,
-      username: record.username,
-      itemName: record.itemName,
-      pricePerDay: record.pricePerDay,
-      daysRented: record.daysRented,
-      totalCost: record.totalCost,
-      status: record.status,
-      date: record.date
-    });
-  }
-  
-  return allSummaries;
+  const sb = getClient();
+  if (sb.error) return [];
+
+  const { data, error } = await sb.from('transactions').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapRow);
 };
 
 export const getTransactionHistory = async (filters = {}) => {
@@ -110,32 +107,37 @@ export const getTransactionHistory = async (filters = {}) => {
 };
 
 export const calculateTransactionCosts = async (transactionId = null) => {
-  let records = [...mockRentalsDb];
-  
+  const sb = getClient();
+  if (sb.error) return { totalItems: 0, totalCost: 0, averageCostPerItem: 0, breakdown: [] };
+
+  let q = sb.from('transactions').select('*');
   if (transactionId) {
-    records = records.filter(r => r.id === transactionId);
-    if (records.length === 0) {
-      throw new Error("Transaction not found.");
-    }
+    q = q.eq('id', transactionId);
   }
-  
-  const costBreakdown = records.map(record => ({
-    id: record.id,
-    itemName: record.itemName,
-    pricePerDay: record.pricePerDay,
-    daysRented: record.daysRented,
-    totalCost: record.totalCost,
-    status: record.status
+  const { data, error } = await q;
+  if (error) throw new Error(error.message);
+
+  if (transactionId && (!data || data.length === 0)) {
+    const err = new Error("Transaction not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const breakdown = (data || []).map(mapRow).map(r => ({
+    id: r.id,
+    itemName: r.itemName,
+    pricePerDay: r.pricePerDay,
+    daysRented: r.daysRented,
+    totalCost: r.totalCost,
+    status: r.status,
   }));
-  
-  const summary = {
-    totalItems: costBreakdown.length,
-    totalCost: costBreakdown.reduce((sum, item) => sum + item.totalCost, 0),
-    averageCostPerItem: costBreakdown.length > 0 
-      ? Math.round(costBreakdown.reduce((sum, item) => sum + item.totalCost, 0) / costBreakdown.length)
-      : 0,
-    breakdown: costBreakdown
+
+  const totalCost = breakdown.reduce((sum, item) => sum + (item.totalCost || 0), 0);
+  return {
+    totalItems: breakdown.length,
+    totalCost,
+    averageCostPerItem: breakdown.length > 0 ? Math.round(totalCost / breakdown.length) : 0,
+    breakdown,
   };
-  
-  return summary;
 };
+

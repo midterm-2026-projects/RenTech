@@ -10,23 +10,23 @@ vi.mock('recharts', async () => {
   };
 });
 
+const sampleRevenue = [{ month: 'Jan', revenue: 4000 }, { month: 'Feb', revenue: 3000 }];
+const sampleForecast = [{ month: 'Jan', actualDemand: 45, projectedSMA: 40 }, { month: 'Feb', actualDemand: 52, projectedSMA: 46 }];
+
 describe('Analytics Dashboard Component', () => {
   
-  it('should render both the Revenue Trends and Demand Forecasting charts by default', () => {
-    render(<AnalyticsDashboard />);
+  it('should render both the Revenue Trends and Demand Forecasting charts when data is provided', () => {
+    render(<AnalyticsDashboard revenueData={sampleRevenue} forecastData={sampleForecast} />);
     
-    // Check if both charts render using toBeInTheDocument
     expect(screen.getByText('Revenue Trends')).toBeInTheDocument();
     expect(screen.getByText('Demand Forecasting (SMA)')).toBeInTheDocument();
   });
 
   it('should display the correct title text inside the heading elements', () => {
-    render(<AnalyticsDashboard />);
+    render(<AnalyticsDashboard revenueData={sampleRevenue} forecastData={sampleForecast} />);
     
-    // Select the elements by their HTML role (h1, h2, h3, etc.)
     const headings = screen.getAllByRole('heading');
     
-    // Use .toHaveTextContent() to verify the text inside those specific elements
     expect(headings[0]).toHaveTextContent('Revenue Trends');
     expect(headings[1]).toHaveTextContent('Demand Forecasting (SMA)');
   });
@@ -47,14 +47,14 @@ describe('Analytics Dashboard Component', () => {
   });
 
   it('should render only the Forecasting chart if Revenue data is missing', () => {
-    render(<AnalyticsDashboard revenueData={[]} />);
+    render(<AnalyticsDashboard revenueData={[]} forecastData={sampleForecast} />);
     
     expect(screen.queryByText('Revenue Trends')).not.toBeInTheDocument();
     expect(screen.getByText('Demand Forecasting (SMA)')).toBeInTheDocument();
   });
 
   it('should render only the Revenue chart if Forecasting data is missing', () => {
-    render(<AnalyticsDashboard forecastData={null} />);
+    render(<AnalyticsDashboard revenueData={sampleRevenue} forecastData={[]} />);
     
     expect(screen.getByText('Revenue Trends')).toBeInTheDocument();
     expect(screen.queryByText('Demand Forecasting (SMA)')).not.toBeInTheDocument();

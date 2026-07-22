@@ -43,7 +43,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
   const displayTopItem = topSellingItem || "N/A";
 
   const STAT_STYLES = {
-    'Total Sales': { bg: 'bg-rose-50', border: 'border-rose-200', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
+    'Active Rental Value': { bg: 'bg-rose-50', border: 'border-rose-200', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
     'Low Stock Items': { bg: 'bg-amber-50', border: 'border-amber-200', iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
     'Optimization Score': { bg: 'bg-emerald-50', border: 'border-emerald-200', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
     'Top Performing Item': { bg: 'bg-blue-50', border: 'border-blue-200', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -64,7 +64,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
 
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: 'Total Sales', value: `₱${Number(totalSales).toLocaleString('en-PH')}`, icon: TrendingUp },
+            { label: 'Active Rental Value', value: `₱${Number(totalSales).toLocaleString('en-PH')}`, icon: TrendingUp },
             { label: 'Low Stock Items', value: lowStockItems, icon: PackageX },
             { label: 'Optimization Score', value: `${displayScore}%`, icon: Award },
             { label: 'Top Performing Item', value: displayTopItem, icon: BarChart3 },
@@ -80,7 +80,7 @@ const SmartInventoryOptimization = ({ metrics }) => {
                   </span>
                 </div>
                 <p className={`font-bold text-gray-800 ${isItem ? 'text-sm sm:text-base' : 'text-xl sm:text-3xl'}`} data-testid={
-                  label === 'Total Sales' ? 'total-sales' :
+                  label === 'Active Rental Value' ? 'active-rental-value' :
                   label === 'Low Stock Items' ? 'low-stock' :
                   label === 'Optimization Score' ? 'opt-score' :
                   'top-item'

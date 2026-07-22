@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getTransactions } from '../services/inventoryApiClient';
 
 const PAGE_SIZE = 8;
 
@@ -48,8 +49,7 @@ const Transaction = () => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/transactions');
-        const result = await response.json();
+        const result = await getTransactions({ limit: 200 });
 
         if (result.status === 'success') {
           const data = result.data || [];
@@ -80,7 +80,21 @@ const Transaction = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const paginated = filteredTransactions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  if (page > totalPages) setPage(1);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+
+  const getPageNumbers = () => {
+    const maxVisible = isMobile ? 3 : 5;
+    if (totalPages <= maxVisible) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const half = Math.floor(maxVisible / 2);
+    let start = page - half;
+    let end = page + half;
+    if (start < 1) { start = 1; end = maxVisible; }
+    if (end > totalPages) { end = totalPages; start = totalPages - maxVisible + 1; }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
 
   return (
     <div className="w-full">
@@ -112,7 +126,7 @@ const Transaction = () => {
             <Filter className="w-[18px] h-[18px] text-gray-500" />
           </button>
           {filterOpen && (
-            <div className="absolute top-[52px] right-0 bg-white rounded-2xl shadow-lg border border-gray-100 p-3 w-[160px] z-50">
+            <div className="absolute top-[52px] right-0 bg-white rounded-2xl shadow-lg border border-gray-100 p-3 w-[180px] sm:w-[160px] z-50">
               <div className="text-[11px] font-bold text-gray-400 tracking-wide px-3 pb-1.5">STATUS</div>
               {statuses.map((s) => (
                 <button
@@ -140,19 +154,23 @@ const Transaction = () => {
           {isMobile ? (
             <div className="space-y-3">
               {paginated.map((tx) => (
-                <div key={tx.id || tx._id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
+                <div key={tx.id || tx._id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold text-gray-900">{tx.id}</span>
                     <span className="text-xs font-bold text-gray-900">₱{tx.amount || tx.totalCost}</span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-1">{tx.item || tx.itemName}</div>
-                  <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{tx.username || 'Customer'}</span>
-                    <span>{tx.date}</span>
+                  <div className="text-sm font-medium text-gray-700 mb-3">{tx.item || tx.itemName}</div>
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-300 mb-0.5">Customer</div>
+                      <span>{tx.username || 'Customer'}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-wider text-gray-300 mb-0.5">Date</div>
+                      <span>{tx.date}</span>
+                    </div>
                   </div>
-                  <div className="mt-2">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${STATUS_COLORS[tx.status] || 'bg-gray-100 text-gray-600'}`}>{tx.status}</span>
-                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${STATUS_COLORS[tx.status] || 'bg-gray-100 text-gray-600'}`}>{tx.status}</span>
                 </div>
               ))}
             </div>
@@ -189,22 +207,22 @@ const Transaction = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 text-sm text-gray-400">
-              <span>{filteredTransactions.length} record{filteredTransactions.length === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center mt-5 pt-4 border-t border-gray-100 text-sm text-gray-400 gap-3">
+              <span className="text-xs sm:text-sm order-2 sm:order-1">{filteredTransactions.length} record{filteredTransactions.length === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+              <div className="flex items-center gap-1.5 order-1 sm:order-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
                   disabled={page <= 1}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
-                  Prev
+                  <span className="hidden sm:inline">Prev</span>
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                {getPageNumbers().map((p) => (
                   <button
                     key={p}
                     onClick={() => setPage(p)}
-                    className={`w-8 h-8 text-xs rounded-lg border transition-colors ${
+                    className={`w-7 h-7 sm:w-8 sm:h-8 text-xs rounded-lg border transition-colors ${
                       p === page
                         ? 'border-rose-200 bg-rose-50 text-rose-600'
                         : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
@@ -216,9 +234,9 @@ const Transaction = () => {
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition text-xs"
                 >
-                  Next
+                  <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>

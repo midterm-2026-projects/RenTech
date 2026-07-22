@@ -16,7 +16,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={partialMetrics} />);
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('₱1,500');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('₱1,500');
     expect(screen.getByTestId('low-stock')).toHaveTextContent('0');
     expect(screen.getByTestId('opt-score')).toBeInTheDocument();
     expect(screen.getByTestId('top-item')).toHaveTextContent('N/A');
@@ -32,7 +32,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={fullMetrics} />);
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('₱5,240');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('₱5,240');
     expect(screen.getByTestId('low-stock')).toHaveTextContent('8');
     expect(screen.getByTestId('opt-score')).toHaveTextContent('92%');
     expect(screen.getByTestId('top-item')).toHaveTextContent('Classic Black Tuxedo');
@@ -43,7 +43,7 @@ describe('SmartInventoryOptimization Component', () => {
       <SmartInventoryOptimization metrics={{ totalSales: 1000 }} />
     );
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('₱1,000');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('₱1,000');
 
     rerender(
       <SmartInventoryOptimization
@@ -55,7 +55,7 @@ describe('SmartInventoryOptimization Component', () => {
       />
     );
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('₱3,500');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('₱3,500');
     expect(screen.getByTestId('low-stock')).toHaveTextContent('3');
     expect(screen.getByTestId('top-item')).toHaveTextContent('Floral Gown');
   });
@@ -69,7 +69,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={zeroMetrics} />);
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('0');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('0');
     expect(screen.getByTestId('low-stock')).toHaveTextContent('0');
     expect(screen.getByTestId('opt-score')).toHaveTextContent('0%');
   });
@@ -166,7 +166,7 @@ describe('SmartInventoryOptimization Component', () => {
 
     render(<SmartInventoryOptimization metrics={metrics} />);
 
-    expect(screen.getByTestId('total-sales')).toHaveTextContent('500');
+    expect(screen.getByTestId('active-rental-value')).toHaveTextContent('500');
     const rentalText = screen.getByTestId('rental-insight');
     expect(rentalText.textContent).toMatch(/Rented Items: 0/);
     expect(rentalText.textContent).toMatch(/Not Rented Items: 0/);

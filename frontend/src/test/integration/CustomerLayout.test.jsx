@@ -6,8 +6,34 @@ import CustomerLayout from "../../pages/CustomerLayout";
 import * as customerService from "../../services/customerAssistantService";
 import * as authModule from "../../components/Login";
 
+// Prevent the real axios client from hitting localhost:5000 during tests
+// (which produces noisy AxiosError network logs). The default products keep
+// the "Emerald Silk Mermaid Evening Gown" card present for the booking tests.
+vi.mock("../../services/inventoryApiClient", () => ({
+  getProducts: vi.fn(() =>
+    Promise.resolve({
+      status: "success",
+      data: [
+        { id: "BK-839260", name: "Emerald Silk Mermaid Evening Gown", price: 4500, category: "GOWN", status: "Available" },
+        { id: "BK-112233", name: "A-Line Ivory Lace Wedding Gown", price: 7500, category: "GOWN", status: "Rented" },
+        { id: "BK-445566", name: "Midnight Black Peak Lapel Tuxedo", price: 3800, category: "SUIT", status: "Maintenance" },
+        { id: "BK-778899", name: "Modern Charcoal Grey Slim Suit", price: 3200, category: "SUIT", status: "Overdue" },
+      ],
+      total: 4,
+      totalPages: 1,
+      page: 1,
+      limit: 100,
+    })
+  ),
+  getTransactions: vi.fn(() =>
+    Promise.resolve({ status: "success", data: [], total: 0, totalPages: 1, page: 1, limit: 200 })
+  ),
+  createTransaction: vi.fn(() => Promise.resolve({ status: "success", data: {} })),
+}));
+
 describe("CustomerLayout Component (Integration)", () => {
   beforeEach(() => {
+    localStorage.clear();
     authModule.saveSession("Customer", "customer");
     vi.spyOn(customerService, "postAssistantMessage").mockResolvedValue(
       'Mock reply for: "Show me gowns"'
@@ -106,11 +132,13 @@ describe("CustomerLayout Component (Integration)", () => {
     renderCustomerLayout();
 
     const availableItem = await screen.findByText(/Emerald Silk Mermaid Evening Gown/i);
-    const cardContainer = availableItem.closest(".rounded-xl") || availableItem.parentElement;
-    await user.click(cardContainer);
+    // Click the card's "Rent Now" button (only Available items render one).
+    const cardDetails = availableItem.parentElement;
+    const rentBtn = cardDetails.querySelector("button");
+    await user.click(rentBtn);
 
     await waitFor(() => {
-      expect(screen.getByText(/Complete Booking|Booking Details|Rent/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complete Booking/i)).toBeInTheDocument();
     });
   });
 

@@ -1,88 +1,103 @@
-import {ProfileModel, IntegrationModel,TemplateModel} from "../model/SystemSetting.model.js";
+import { getSupabase } from '../config/supabaseClient.js';
 
-let profile = new ProfileModel({
-  name: "Admin User",
-  role: "Admin Role",
-  email: "user@rentech.com",
-  phone: "+63 917 123 4567"
-});
+const DEFAULTS = {
+  bookingConfirmation: "Hi {customerName}, your booking for {itemName} on {rentalDate} is confirmed! Show this QR when you pick up your item: {qrCode}. Thank you for choosing RENTECH.",
+  returnReminder: "Hi {customerName}, this is a friendly reminder to return your rented item '{itemName}' by {returnDate}. Late returns are subject to penalties. - RENTECH",
+  overdueAlert: "URGENT: {customerName}, your rental for '{itemName}' is overdue. Please return it immediately to avoid additional charges. - RENTECH",
+  paymentConfirmation: "Hi {customerName}, we received your downpayment of ₱{downpaymentAmount} for '{itemName}'. Remaining balance ₱{balanceAmount} is due at pickup. - RENTECH",
+};
 
-let integrations = [
-  new IntegrationModel({
-    id: 1,
-    name: "Semaphore SMS Gateway",
-    status: "Connected",
-    desc: "Automated return reminders & booking confirmations."
-  }),
+function getClient() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  return sb;
+}
 
-  new IntegrationModel({
-    id: 2,
-    name: "PayMongo Payments",
-    status: "Active",
-    desc: "Secure GCash & Credit Card downpayments."
-  })
-];
+async function getSettingsByPrefix(prefix) {
+  const sb = getClient();
+  if (!sb) return {};
+  const { data } = await sb
+    .from('settings')
+    .select('key, value')
+    .ilike('key', `${prefix}%`);
+  const map = {};
+  (data || []).forEach(row => { map[row.key] = row.value; });
+  return map;
+}
 
-let templates = new TemplateModel({
-  bookingConfirmation:
-    "Hi {customerName}, your booking for {itemName} on {rentalDate} is confirmed! Show this QR when you pick up your item: {qrCode}. Thank you for choosing RENTECH.",
-
-  returnReminder:
-    "Hi {customerName}, this is a friendly reminder to return your rented item '{itemName}' by {returnDate}. Late returns are subject to penalties. - RENTECH",
-
-  overdueAlert:
-    "URGENT: {customerName}, your rental for '{itemName}' is overdue. Please return it immediately to avoid additional charges. - RENTECH",
-
-  paymentConfirmation:
-    "Hi {customerName}, we received your downpayment of ₱{downpaymentAmount} for '{itemName}'. Remaining balance ₱{balanceAmount} is due at pickup. - RENTECH"
-});
+async function setSetting(key, value) {
+  const sb = getClient();
+  if (!sb) return;
+  await sb
+    .from('settings')
+    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+}
 
 export const getProfile = async () => {
-  return profile;
+  const settings = await getSettingsByPrefix('profile_');
+  return {
+    name: settings.profile_name || 'Admin User',
+    role: settings.profile_role || 'Admin Role',
+    email: settings.profile_email || 'user@rentech.com',
+    phone: settings.profile_phone || '+63 917 123 4567',
+  };
 };
 
 export const getIntegrations = async () => {
-  return integrations;
+  const settings = await getSettingsByPrefix('integration_');
+  return [
+    {
+      id: 1,
+      name: settings.integration_semaphore_name || 'Semaphore SMS Gateway',
+      status: settings.integration_semaphore_status || 'Connected',
+      desc: settings.integration_semaphore_desc || 'Automated return reminders & booking confirmations.',
+    },
+    {
+      id: 2,
+      name: settings.integration_paymongo_name || 'PayMongo Payments',
+      status: settings.integration_paymongo_status || 'Active',
+      desc: settings.integration_paymongo_desc || 'Secure GCash & Credit Card downpayments.',
+    },
+  ];
 };
 
 export const getTemplates = async () => {
-  return templates;
+  const settings = await getSettingsByPrefix('');
+  const result = { ...DEFAULTS };
+  for (const key of Object.keys(DEFAULTS)) {
+    if (settings[key] !== undefined) {
+      result[key] = settings[key];
+    }
+  }
+  return result;
 };
 
 export const updateTemplate = async (key, value) => {
-
-  if (!templates[key]) {
-    throw new Error("Template not found.");
+  if (!DEFAULTS[key]) {
+    throw new Error('Template not found.');
   }
-
-  templates[key] = value;
-
-  return templates;
+  await setSetting(key, value);
+  return await getTemplates();
 };
 
-const defaultTemplates = { ...templates };
-
 export const resetTemplate = async (key) => {
-
-  if (!defaultTemplates[key]) {
-    throw new Error("Template not found.");
+  if (!DEFAULTS[key]) {
+    throw new Error('Template not found.');
   }
-
-  templates[key] = defaultTemplates[key];
-
-  return templates;
+  await setSetting(key, DEFAULTS[key]);
+  return await getTemplates();
 };
 
 export const resetAllTemplates = async () => {
-
-  templates = new TemplateModel(defaultTemplates);
-
-  return templates;
+  const sb = getClient();
+  if (sb) {
+    for (const key of Object.keys(DEFAULTS)) {
+      await setSetting(key, DEFAULTS[key]);
+    }
+  }
+  return { ...DEFAULTS };
 };
 
 export const signOut = async () => {
-  return {
-    success: true,
-    message: "User signed out successfully."
-  };
+  return { success: true, message: 'User signed out successfully.' };
 };

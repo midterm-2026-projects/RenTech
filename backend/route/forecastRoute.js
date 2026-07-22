@@ -1,58 +1,76 @@
+import { getSupabase } from '../config/supabaseClient.js';
 import { aggregateTransactions } from '../service/analyticsAggregationService.js';
 import { calculateSMA } from '../service/smaForecastingService.js';
-import { getTransactions } from '../data/mockData.js';
+import { requireAuth } from '../middleware/auth.js';
 
 export function registerForecastRoute(router) {
-  router.get('/forecast', (req, res) => {
-    const { period, window } = req.query;
+  router.get('/forecast', requireAuth, async (req, res) => {
+    try {
+      const { period, window } = req.query;
 
-    if (!period || !window) {
-      return res.status(400).json({
-        error: 'Missing required parameters',
-        message: 'Both "period" and "window" query parameters are required.',
-      });
-    }
+      if (!period || !window) {
+        return res.status(400).json({
+          error: 'Missing required parameters',
+          message: 'Both "period" and "window" query parameters are required.',
+        });
+      }
 
-    if (!['day', 'week'].includes(period)) {
-      return res.status(400).json({
-        error: 'Invalid period',
-        message: 'Period must be "day" or "week".',
-      });
-    }
+      if (!['day', 'week'].includes(period)) {
+        return res.status(400).json({
+          error: 'Invalid period',
+          message: 'Period must be "day" or "week".',
+        });
+      }
 
-    const windowSize = parseInt(window, 10);
+      const windowSize = parseInt(window, 10);
 
-    if (Number.isNaN(windowSize) || windowSize < 1) {
-      return res.status(400).json({
-        error: 'Invalid window',
-        message: 'Window must be a positive integer.',
-      });
-    }
+      if (Number.isNaN(windowSize) || windowSize < 1) {
+        return res.status(400).json({
+          error: 'Invalid window',
+          message: 'Window must be a positive integer.',
+        });
+      }
 
-    const transactions = getTransactions();
-    const aggregation = aggregateTransactions(transactions, period);
+      const sb = getSupabase();
+      if (!sb) {
+        return res.status(500).json({ error: 'Database not configured' });
+      }
 
-    if (aggregation.length === 0) {
-      return res.json({
+      const { data: transactions, error } = await sb
+        .from('transactions')
+        .select('date, amount')
+        .order('date', { ascending: true });
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      const aggregation = aggregateTransactions(transactions || [], period);
+
+      if (aggregation.length === 0) {
+        return res.json({
+          period,
+          window: windowSize,
+          aggregation: [],
+          forecast: [],
+        });
+      }
+
+      const forecastData = aggregation.map(a => ({
+        date: a.period,
+        value: a.count,
+      }));
+
+      const forecast = calculateSMA(forecastData, windowSize);
+
+      res.json({
         period,
         window: windowSize,
-        aggregation: [],
-        forecast: [],
+        aggregation,
+        forecast,
       });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-
-    const forecastData = aggregation.map(a => ({
-      date: a.period,
-      value: a.count,
-    }));
-
-    const forecast = calculateSMA(forecastData, windowSize);
-
-    res.json({
-      period,
-      window: windowSize,
-      aggregation,
-      forecast,
-    });
   });
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileDown } from 'lucide-react';
+import { showToast } from './Toast';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AIBusinessInsights from './AIBusinessInsights';
 import RevenueVsProjection from './RevenueVsProjection';
@@ -47,7 +48,7 @@ export default function AIIntelligenceView() {
     try {
       await generateAnalyticsPdfReport();
     } catch {
-      alert('Failed to generate report. Please try again.');
+      showToast('Failed to generate report. Please try again.', 'error');
     } finally {
       setExporting(false);
     }

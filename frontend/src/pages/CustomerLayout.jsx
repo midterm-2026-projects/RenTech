@@ -7,12 +7,13 @@ import BookingForm from '../components/BookingForm.jsx';
 import ChatAssistantWidget from '../components/ChatAssistantWidget.jsx';
 import Transaction from '../components/Transaction.jsx';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { getProducts } from '../services/inventoryApiClient';
 
 function CustomerContent() {
   const [activeTab, setActiveTab] = useState("Collection");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const [productsList, setProductsList] = useState(() => {
     const savedProducts = localStorage.getItem('customer_products_list');
@@ -22,8 +23,7 @@ function CustomerContent() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/products?limit=100')
-      .then(res => res.json())
+    getProducts({ limit: 100 })
       .then(result => {
         if (result.status === 'success' && Array.isArray(result.data)) {
           setProductsList(result.data);
@@ -41,7 +41,7 @@ function CustomerContent() {
     .filter((product) => {
       if (product.status === 'Maintenance' || product.status === 'Overdue') return false;
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = selectedCategory === "All" || product.status === selectedCategory;
+      const matchesStatus = statusFilter === "All" || product.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
@@ -128,8 +128,8 @@ function CustomerContent() {
                 <SearchAndFilter
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
+                  statusFilter={statusFilter}
+                  onStatusChange={setStatusFilter}
                 />
               </div>
 

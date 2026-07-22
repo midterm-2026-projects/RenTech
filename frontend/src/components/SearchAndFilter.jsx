@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 
-const SearchAndFilter = ({ searchTerm, onSearchChange, selectedCategory, onCategoryChange }) => {
+const SearchAndFilter = ({ searchTerm, onSearchChange, statusFilter, onStatusChange }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const statuses = ['All', 'Available', 'Rented'];
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const handleSelectStatus = (status) => {
-    onCategoryChange(status);
+    onStatusChange(status);
     setIsDropdownOpen(false);
   };
 
@@ -58,7 +58,7 @@ const SearchAndFilter = ({ searchTerm, onSearchChange, selectedCategory, onCateg
           <div style={styles.dropdownMenu}>
             <div style={styles.dropdownHeader}>STATUS</div>
             {statuses.map((status) => {
-              const isSelected = selectedCategory === status;
+              const isSelected = statusFilter === status;
               return (
                 <button
                   key={status}

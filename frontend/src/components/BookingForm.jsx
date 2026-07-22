@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Smartphone, CreditCard } from 'lucide-react';
-import DatePicker from './DatePicker'; 
+import DatePicker from './DatePicker';
+import { showToast } from './Toast';
+import { createTransaction } from '../services/inventoryApiClient';
 
 export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 4500, itemName = 'Emerald Silk Mermaid Evening Gown' }) {
   const [step, setStep] = useState(1);
@@ -24,6 +26,12 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   const balance = price - formData.downpayment;
 
@@ -84,8 +92,8 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
   };
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modalContainer}>
+    <div style={styles.overlay} onClick={onClose}>
+      <div style={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
         <div style={styles.header}>
@@ -298,39 +306,28 @@ export default function BookingForm({ onClose, onBookingSuccess, itemPrice = 450
                   if (step === 1 && !validateStep1()) return;
                   if (step === 2) {
                     try {
-                      const response = await fetch('http://localhost:5000/api/transactions', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          item: itemName,
-                          username: formData.name || 'Maria Santos',
-                          date: selectedDate,
-                          status: 'Reserved',
-                          amount: Number(formData.downpayment),
-                          downpayment: Number(formData.downpayment),
-                          balance: balance,
-                          size: formData.size,
-                          paymentMethod: formData.paymentMethod,
-                          phone: formData.phone,
-                          address: formData.address,
-                          notes: formData.notes
-                        }),
+                      await createTransaction({
+                        item: itemName,
+                        username: formData.name || 'Maria Santos',
+                        date: selectedDate,
+                        status: 'Reserved',
+                        amount: Number(formData.downpayment),
+                        downpayment: Number(formData.downpayment),
+                        balance: balance,
+                        size: formData.size,
+                        paymentMethod: formData.paymentMethod,
+                        phone: formData.phone,
+                        address: formData.address,
+                        notes: formData.notes
                       });
 
-                      const result = await response.json();
-                      if (response.ok) {
-                        setStep(3); 
-                        if (onBookingSuccess) {
-                          onBookingSuccess();
-                        }
-                      } else {
-                        alert('Failed to save transaction: ' + (result.error || result.message || 'Unknown error'));
+                      setStep(3);
+                      if (onBookingSuccess) {
+                        onBookingSuccess();
                       }
                     } catch (err) {
-                      console.error('Error submitting booking:', err);
-                      alert('Server connection error while saving booking.');
+                      const msg = err?.response?.data?.error || err.message || 'Unknown error';
+                      showToast('Failed to save transaction: ' + msg, 'error');
                     }
                   } else {
                     setStep(prev => prev + 1);

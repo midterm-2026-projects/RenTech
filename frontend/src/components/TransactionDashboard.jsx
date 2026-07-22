@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Download, ArrowLeft, ArrowRight, Undo2 } from 'lucide-react';
 import { getTransactions, updateTransactionStatus } from '../services/inventoryApiClient';
+import { showToast } from './Toast';
 
 const PAGE_SIZE = 10;
 
@@ -82,9 +83,9 @@ export default function TransactionDashboard() {
       setTransactions((prev) =>
         prev.map((t) => (t.id === idToUpdate ? { ...t, status: 'Returned' } : t))
       );
-      alert('Item status updated to Returned!');
+      showToast('Item status updated to Returned!');
     } catch {
-      alert('Failed to update status. Please try again.');
+      showToast('Failed to update status. Please try again.', 'error');
     }
   }
 
@@ -92,12 +93,12 @@ export default function TransactionDashboard() {
     try {
       const res = await getTransactions({ page: 1, limit: 1000, search: debouncedSearch, status: statusParam });
       const rows = res.data || [];
-      if (!rows.length) { alert('No records to export.'); return; }
+      if (!rows.length) { showToast('No records to export.', 'error'); return; }
       const header = ['ID', 'Customer', 'Item', 'Date', 'Status', 'Amount'];
       const body = rows.map((r) => [r.id, r.username, r.itemName, r.date, r.status, `₱${Number(r.totalCost || 0).toLocaleString()}`]);
       downloadCSV('transactions.csv', [header, ...body]);
     } catch {
-      alert('Failed to export transactions. Please try again.');
+      showToast('Failed to export transactions. Please try again.', 'error');
     }
   }
 

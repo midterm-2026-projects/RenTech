@@ -61,6 +61,12 @@ export async function getTransactions({ page = 1, limit = 10, search = '', statu
   return res.data; // { status, data, page, limit, total, totalPages }
 }
 
+// Create a new transaction (booking).
+export async function createTransaction(data) {
+  const res = await api.post('/api/transactions', data);
+  return res.data;
+}
+
 // Persist a transaction status change (e.g. mark Returned via the ↩ button).
 export async function updateTransactionStatus(id, status) {
   const res = await api.patch(`/api/transactions/${encodeURIComponent(id)}`, { status });

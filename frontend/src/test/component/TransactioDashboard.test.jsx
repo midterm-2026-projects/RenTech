@@ -45,14 +45,19 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
 
     expect(screen.getByPlaceholderText("Search by ID, customer, or item...")).toBeDefined();
     expect(screen.getByText("Export CSV")).toBeDefined();
+
+    const items = await screen.findAllByText("#TX-1001");
+    expect(items.length).toBeGreaterThan(0);
   });
 
-  it("should display the search bar input field with the correct placeholder text", () => {
+  it("should display the search bar input field with the correct placeholder text", async () => {
     render(<TransactionDashboard />);
     expect(screen.getByPlaceholderText("Search by ID, customer, or item...")).toBeDefined();
+    const items = await screen.findAllByText("#TX-1001");
+    expect(items.length).toBeGreaterThan(0);
   });
 
-  it("should render default table column headers properly", () => {
+  it("should render default table column headers properly", async () => {
     render(<TransactionDashboard />);
 
     expect(screen.getByText("Transaction ID")).toBeDefined();
@@ -60,6 +65,8 @@ describe("Transaction Dashboard Frontend Unit Tests", () => {
     expect(screen.getByText("Item")).toBeDefined();
     expect(screen.getByText("Status")).toBeDefined();
     expect(screen.getByText("Amount")).toBeDefined();
+    const items = await screen.findAllByText("#TX-1001");
+    expect(items.length).toBeGreaterThan(0);
   });
 
   it("should update rows dynamically when a query is typed into the search bar", async () => {

@@ -53,11 +53,14 @@ describe('ReportExport Component', () => {
     createObjectURL = vi.fn(() => 'blob:mock-url');
     globalThis.URL.createObjectURL = createObjectURL;
     globalThis.URL.revokeObjectURL = vi.fn();
+    // jsdom can't perform the <a>.click() navigation used for downloads.
+    HTMLAnchorElement.prototype.click = vi.fn();
   });
 
   afterEach(() => {
     delete globalThis.URL.createObjectURL;
     delete globalThis.URL.revokeObjectURL;
+    delete HTMLAnchorElement.prototype.click;
   });
 
   it('renders both export buttons', () => {
