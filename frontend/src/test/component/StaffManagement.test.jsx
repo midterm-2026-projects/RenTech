@@ -1,49 +1,94 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, beforeEach } from "vitest";
-import StaffManagement from "../../components/StaffManagement.jsx"; 
+import React from 'react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react';
 
-describe("Staff Management - Video Validation Test Suite", () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
+import '@testing-library/jest-dom';
 
-  const getForm = () => screen.getByRole("button", { name: /\+ add/i }).closest("form");
+import { vi } from 'vitest';
 
-  it("should display 'Both fields are required' if the username field is left empty", () => {
+vi.mock('../../services/inventoryApiClient', () => ({
+  getStaffList: vi.fn(async () => []),
+  addStaff: vi.fn(async () => ({ message: 'Staff added successfully' })),
+  removeStaff: vi.fn(async () => ({ message: 'Staff removed' })),
+}));
+
+import StaffManagement from '../../components/StaffManagement.jsx';
+
+describe('Staff Management - Video Validation Test Suite', () => {
+  test('should display Both fields are required if the username field is left empty', () => {
     render(<StaffManagement />);
-    const usernameInput = screen.getByPlaceholderText("customer");
-    const passwordInput = screen.getByPlaceholderText("••••••••");
 
-    fireEvent.change(usernameInput, { target: { value: "" } });
-    fireEvent.change(passwordInput, { target: { value: "somepassword" } });
-    fireEvent.submit(getForm());
+    const passwordInput =
+      screen.getByPlaceholderText('Password');
 
-    expect(screen.getByText("Both fields are required")).toBeTruthy();
+    fireEvent.change(passwordInput, {
+      target: {
+        value: 'password123',
+      },
+    });
+
+    fireEvent.click(
+      screen.getByText('+ Add')
+    );
+
+    expect(
+      screen.getByText('Both fields are required')
+    ).toBeInTheDocument();
   });
 
-  it("should display 'Both fields are required' if the password field is left empty", () => {
+  test('should display Both fields are required if the password field is left empty', () => {
     render(<StaffManagement />);
-    const usernameInput = screen.getByPlaceholderText("customer");
-    const passwordInput = screen.getByPlaceholderText("••••••••");
 
-    fireEvent.change(usernameInput, { target: { value: "jj" } });
-    fireEvent.change(passwordInput, { target: { value: "" } });
-    fireEvent.submit(getForm());
+    const usernameInput =
+      screen.getByPlaceholderText('Username');
 
-    expect(screen.getByText("Both fields are required")).toBeTruthy();
+    fireEvent.change(usernameInput, {
+      target: {
+        value: 'teststaff',
+      },
+    });
+
+    fireEvent.click(
+      screen.getByText('+ Add')
+    );
+
+    expect(
+      screen.getByText('Both fields are required')
+    ).toBeInTheDocument();
   });
 
-  it("should clear out the entry input text boxes immediately following a successful add", () => {
+  test('should clear out the entry input text boxes immediately following a successful add', async () => {
     render(<StaffManagement />);
-    const usernameInput = screen.getByPlaceholderText("customer");
-    const passwordInput = screen.getByPlaceholderText("••••••••");
 
-    fireEvent.change(usernameInput, { target: { value: "jj" } });
-    fireEvent.change(passwordInput, { target: { value: "nj" } });
-    fireEvent.submit(getForm());
+    const usernameInput =
+      screen.getByPlaceholderText('Username');
 
-    expect(usernameInput.value).toBe("");
-    expect(passwordInput.value).toBe("");
+    const passwordInput =
+      screen.getByPlaceholderText('Password');
+
+    fireEvent.change(usernameInput, {
+      target: {
+        value: 'newstaff',
+      },
+    });
+
+    fireEvent.change(passwordInput, {
+      target: {
+        value: 'password123',
+      },
+    });
+
+    fireEvent.click(
+      screen.getByText('+ Add')
+    );
+
+    await waitFor(() => {
+      expect(usernameInput.value).toBe('');
+      expect(passwordInput.value).toBe('');
+    });
   });
-
 });

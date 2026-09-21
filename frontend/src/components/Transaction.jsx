@@ -1,50 +1,73 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getSession } from './Login';
+import { getTransactions } from '../services/inventoryApiClient';
+
+const SEED_TRANSACTIONS = [
+  {
+    id: 'TX-1021',
+    item: 'Crimson Ballgown',
+    date: 'May 10, 2026',
+    status: 'Reserved',
+    amount: '₱2,000'
+  },
+  {
+    id: 'TX-1022',
+    item: 'Emerald Evening Gown',
+    date: 'May 12, 2026',
+    status: 'Reserved',
+    amount: '₱3,500'
+  },
+  {
+    id: 'TX-1023',
+    item: 'Sapphire Tuxedo',
+    date: 'May 15, 2026',
+    status: 'Reserved',
+    amount: '₱2,800'
+  }
+];
 
 const Transaction = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [transactions, setTransactions] = useState(SEED_TRANSACTIONS);
 
-  
-  const transactions = [
-    {
-      id: 'TX-1021',
-      item: 'Crimson Ballgown',
-      date: 'May 10, 2026',
-      status: 'Reserved',
-      amount: '₱2,000'
-    },
-    {
-      id: 'TX-1022',
-      item: 'Emerald Evening Gown',
-      date: 'May 12, 2026',
-      status: 'Reserved',
-      amount: '₱3,500'
-    },
-    {
-      id: 'TX-1023',
-      item: 'Sapphire Tuxedo',
-      date: 'May 15, 2026',
-      status: 'Reserved',
-      amount: '₱2,800'
-    }
-  ];
+  useEffect(() => {
+    const session = getSession();
+    const username = session?.username;
 
-  
-  const filteredTransactions = transactions.filter(tx => 
+    getTransactions({ page: 1, limit: 100 })
+      .then((res) => {
+        const rows = res?.data;
+        if (Array.isArray(rows) && rows.length) {
+          const mapped = rows
+            .filter((t) => !username || (t.username || '').toLowerCase() === username.toLowerCase())
+            .map((t) => ({
+              id: t.id,
+              item: t.item,
+              date: t.date,
+              status: t.status,
+              amount: `₱${Number(String(t.amount).replace(/[^\d]/g, '')) || 0}`
+            }));
+          if (mapped.length > 0) {
+            setTransactions(mapped);
+          }
+        }
+      })
+      .catch(() => { /* keep seed data on error */ });
+  }, []);
+
+  const filteredTransactions = transactions.filter(tx =>
     tx.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tx.item.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div style={styles.container}>
-      {/* Centered */}
       <div style={styles.contentWrapper}>
-        {/* Header Section */}
         <div style={styles.header}>
           <h1 style={styles.title}>Transactions</h1>
           <p style={styles.subtitle}>Track your active and past reservations.</p>
         </div>
 
-        {/* Search Input Box */}
         <div style={styles.searchWrapper}>
           <div style={styles.iconWrapper}>
             <svg style={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="#94a3b8" strokeWidth={2}>
@@ -53,14 +76,13 @@ const Transaction = () => {
           </div>
           <input
             type="text"
-            placeholder="Search by ID, customer, or item..."
+            placeholder="Search by ID or item..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={styles.input}
           />
         </div>
 
-        {/* Table Card */}
         <div style={styles.tableCard}>
           <table style={styles.table}>
             <thead>
@@ -80,7 +102,13 @@ const Transaction = () => {
                     <td style={styles.tdItem}>{tx.item}</td>
                     <td style={styles.tdDate}>{tx.date}</td>
                     <td style={styles.tdLeft}>
-                      <span style={styles.badge}>{tx.status}</span>
+                      <span style={{
+                        ...styles.badge,
+                        backgroundColor: tx.status === 'Active' ? '#ecfdf5' : tx.status === 'Overdue' ? '#fef2f2' : tx.status === 'Pending' ? '#fffbeb' : '#eff6ff',
+                        color: tx.status === 'Active' ? '#059669' : tx.status === 'Overdue' ? '#dc2626' : tx.status === 'Pending' ? '#d97706' : '#2563eb',
+                      }}>
+                        {tx.status}
+                      </span>
                     </td>
                     <td style={styles.tdAmount}>{tx.amount}</td>
                   </tr>
@@ -224,8 +252,6 @@ const styles = {
     borderRadius: '6px',
     fontSize: '12px',
     fontWeight: '600',
-    backgroundColor: '#eff6ff',
-    color: '#2563eb',
   },
   noData: {
     padding: '40px',

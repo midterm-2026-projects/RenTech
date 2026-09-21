@@ -67,4 +67,20 @@ export async function updateTransactionStatus(id, status) {
   return res.data; // { status, data }
 }
 
+// Staff management endpoints (Admin only).
+export async function getStaffList() {
+  const res = await api.get('/api/admin/staff');
+  return res.data;
+}
+
+export async function addStaff(username, password) {
+  const res = await api.post('/api/admin/staff', { username, password });
+  return res.data;
+}
+
+export async function removeStaff(username) {
+  const res = await api.delete(`/api/admin/staff/${encodeURIComponent(username)}`);
+  return res.data;
+}
+
 export default api;

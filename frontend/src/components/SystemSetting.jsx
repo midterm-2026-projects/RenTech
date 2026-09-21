@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { LogOut, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { clearSession } from './Login';
+import StaffManagement from './StaffManagement';
 
 const MOCK_DB_INITIAL = {
   profile: { 
@@ -53,7 +52,6 @@ export default function AccountSettings() {
   };
 
   const handleSave = (key) => {
-
     if (!editValue || !editValue.trim()) {
       setErrorMessage("Template content cannot be blank or empty.");
       return;
@@ -76,11 +74,10 @@ export default function AccountSettings() {
     triggerNotification("All templates reset to defaults.");
   };
 
-  const navigate = useNavigate();
+  // Staff management is now handled by StaffManagement component via API
 
   const handleSignOut = () => {
-    clearSession();
-    navigate("/", { replace: true });
+    triggerNotification("Signing out user session state...");
   };
 
   const triggerNotification = (msg) => {
@@ -114,13 +111,11 @@ export default function AccountSettings() {
         </div>
       )}
 
-
-
       <main className="flex-1 overflow-y-auto px-6 py-8 space-y-6 scrollbar-thin">
         <div className="max-w-[760px] mx-auto space-y-6">
           
           <div>
-            <h2 className="text-3xl font-bold text-[#111827]">Account & Settings</h2>
+            <h2 className="text-3xl font-bold text-[#111827]">Admin Portal</h2>
             <p className="text-slate-500 text-base mt-1">Manage preferences and system notifications.</p>
           </div>
 
@@ -214,6 +209,8 @@ export default function AccountSettings() {
               Reset all templates to defaults
             </button>
           </section>
+
+          <StaffManagement />
 
           <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-2">
             <h3 className="text-base font-bold text-slate-900">Account Actions</h3>

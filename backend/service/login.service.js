@@ -31,8 +31,9 @@ export const loginUser = async (email, password) => {
 };
 
 export const authenticateUser = async (username, password) => {
+    const normalizedUsername = (username || '').trim().toLowerCase();
     const user = mockUsers.find(
-        (item) => item.username === username && item.password === password,
+        (item) => item.username.toLowerCase() === normalizedUsername && item.password === password,
     );
 
     if (!user) return null;

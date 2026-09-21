@@ -17,6 +17,7 @@ import { register, login } from './controller/loginController.js';
 import { getRentalHistory, getTransactionSummary, calculateTransactionCosts } from './service/transactionMonitoring.service.js';
 import { getTemplates, updateTemplate, resetTemplate, resetAllTemplates } from './service/SystemSetting.service.js';
 import { getStaffList, addStaff, removeStaff } from './service/staffManagement.service.js';
+import { requireAuth, requireRole } from './middleware/auth.js';
 
 // Create Express app
 const app = express();
@@ -74,8 +75,11 @@ bookingRoutes.post('/bookings', async (req, res) => {
 });
 
 // ====================
-// Transaction Endpoints
+// Transaction Endpoints (protected)
 // ====================
+// Require authentication for all /api/transactions routes
+transactionRoutes.use(requireAuth);
+
 transactionRoutes.get('/transactions', async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
@@ -106,7 +110,7 @@ transactionRoutes.get('/transactions', async (req, res) => {
   }
 });
 
-transactionRoutes.patch('/transactions/:id', async (req, res) => {
+transactionRoutes.patch('/transactions/:id', requireRole('Admin', 'Staff'), async (req, res) => {
   try {
     const { status } = req.body;
     const updated = await transactionService.updateTransactionStatus(req.params.id, status);
@@ -122,7 +126,8 @@ transactionRoutes.patch('/transactions/:id', async (req, res) => {
   }
 });
 
-transactionRoutes.post('/transactions', async (req, res) => {
+// Only Admins may create transactions through this endpoint
+transactionRoutes.post('/transactions', requireRole('Admin'), async (req, res) => {
   try {
     const newTransaction = await transactionService.createTransaction(req.body);
     res.status(201).json(newTransaction);
@@ -174,8 +179,10 @@ loginRoutes.post('/register', register);
 loginRoutes.post('/login', login);
 
 // ====================
-// Settings/Template Endpoints
+// Settings/Template Endpoints (Admin only)
 // ====================
+settingsRoutes.use(requireAuth, requireRole('Admin'));
+
 settingsRoutes.get('/templates', async (req, res) => {
   try {
     const templates = await getTemplates();
@@ -221,8 +228,10 @@ settingsRoutes.post('/templates/reset-all', async (req, res) => {
 });
 
 // ====================
-// Staff Management Endpoints
+// Staff Management Endpoints (Admin only)
 // ====================
+staffRoutes.use(requireAuth, requireRole('Admin'));
+
 staffRoutes.get('/staff', async (req, res) => {
   try {
     const staffList = await getStaffList();
@@ -291,11 +300,11 @@ app.use('/api', healthRouter);
 app.use('/api', bookingRoutes);
 app.use('/api', productRoutes);
 app.use('/api', loginRoutes);
+app.use('/api/auth', loginRoutes);
 app.use('/api', transactionRoutes);
 app.use('/api', forecastRouter);
 app.use('/api', aiRouter);
 app.use('/api/analytics', analyticsRouter);
-app.use('/api/auth', loginRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', staffRoutes);
 

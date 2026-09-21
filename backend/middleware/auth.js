@@ -12,8 +12,8 @@ export function verifyToken(token) {
     const [username, role] = decoded.split(':');
     if (!role) throw new Error('Invalid dev token');
     return { username, role };
-  } catch {
-    throw new Error('Invalid token');
+  } catch (err) {
+    throw err;
   }
 }
 
@@ -35,4 +35,14 @@ export function requireAuth(req, res, next) {
   } catch {
     return res.status(401).json({ error: 'Unauthorized: invalid token' });
   }
+}
+
+// Express middleware: restricts an endpoint to one or more roles.
+export function requireRole(...allowed) {
+  return (req, res, next) => {
+    if (!req.user || !allowed.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden: insufficient role' });
+    }
+    next();
+  };
 }
